@@ -30,7 +30,7 @@ function Layout() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
-  const isStudent = rolesLoaded && !isAdmin;
+  const isStudent = Boolean(user) && rolesLoaded && !isAdmin;
   const pathAllowed = canAccessAuthenticatedPath(location.pathname, isAdmin);
   const nav = isStudent ? studentNav : adminNav;
 
@@ -41,9 +41,10 @@ function Layout() {
   }, [isStudent, pathAllowed, navigate]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const next = isAdmin ? "/classi" : "/area-studente";
+    await supabase.auth.signOut({ scope: "local" });
     queryClient.clear();
-    navigate({ to: "/auth", search: { next: isAdmin ? "/classi" : "/area-studente" } });
+    window.location.replace(`/auth?next=${encodeURIComponent(next)}`);
   };
 
   return (
