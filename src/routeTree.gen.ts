@@ -10,33 +10,95 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedCorsiRouteImport } from './routes/_authenticated/corsi'
+import { Route as AuthenticatedStudentiRouteImport } from './routes/_authenticated/studenti'
+import { Route as AuthenticatedClassiIndexRouteImport } from './routes/_authenticated/classi.index'
+import { Route as AuthenticatedClassiIdRouteImport } from './routes/_authenticated/classi.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCorsiRoute = AuthenticatedCorsiRouteImport.update({
+  id: '/corsi',
+  path: '/corsi',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedStudentiRoute = AuthenticatedStudentiRouteImport.update({
+  id: '/studenti',
+  path: '/studenti',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedClassiIndexRoute =
+  AuthenticatedClassiIndexRouteImport.update({
+    id: '/classi/',
+    path: '/classi/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedClassiIdRoute = AuthenticatedClassiIdRouteImport.update({
+  id: '/classi/$id',
+  path: '/classi/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/corsi': typeof AuthenticatedCorsiRoute
+  '/studenti': typeof AuthenticatedStudentiRoute
+  '/classi/$id': typeof AuthenticatedClassiIdRoute
+  '/classi/': typeof AuthenticatedClassiIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/corsi': typeof AuthenticatedCorsiRoute
+  '/studenti': typeof AuthenticatedStudentiRoute
+  '/classi/$id': typeof AuthenticatedClassiIdRoute
+  '/classi': typeof AuthenticatedClassiIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/corsi': typeof AuthenticatedCorsiRoute
+  '/_authenticated/studenti': typeof AuthenticatedStudentiRoute
+  '/_authenticated/classi/$id': typeof AuthenticatedClassiIdRoute
+  '/_authenticated/classi/': typeof AuthenticatedClassiIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/auth' | '/corsi' | '/studenti' | '/classi/$id' | '/classi/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/auth' | '/corsi' | '/studenti' | '/classi/$id' | '/classi'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/corsi'
+    | '/_authenticated/studenti'
+    | '/_authenticated/classi/$id'
+    | '/_authenticated/classi/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +110,72 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/corsi': {
+      id: '/_authenticated/corsi'
+      path: '/corsi'
+      fullPath: '/corsi'
+      preLoaderRoute: typeof AuthenticatedCorsiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/studenti': {
+      id: '/_authenticated/studenti'
+      path: '/studenti'
+      fullPath: '/studenti'
+      preLoaderRoute: typeof AuthenticatedStudentiRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/classi/': {
+      id: '/_authenticated/classi/'
+      path: '/classi'
+      fullPath: '/classi/'
+      preLoaderRoute: typeof AuthenticatedClassiIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/classi/$id': {
+      id: '/_authenticated/classi/$id'
+      path: '/classi/$id'
+      fullPath: '/classi/$id'
+      preLoaderRoute: typeof AuthenticatedClassiIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCorsiRoute: typeof AuthenticatedCorsiRoute
+  AuthenticatedStudentiRoute: typeof AuthenticatedStudentiRoute
+  AuthenticatedClassiIdRoute: typeof AuthenticatedClassiIdRoute
+  AuthenticatedClassiIndexRoute: typeof AuthenticatedClassiIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCorsiRoute: AuthenticatedCorsiRoute,
+  AuthenticatedStudentiRoute: AuthenticatedStudentiRoute,
+  AuthenticatedClassiIdRoute: AuthenticatedClassiIdRoute,
+  AuthenticatedClassiIndexRoute: AuthenticatedClassiIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
