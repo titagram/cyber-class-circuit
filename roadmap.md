@@ -12,3 +12,11 @@
 - [x] Consentire la lettura dei soli corsi e capitoli assegnati alla sua classe.
 - [x] Creare l’area studente e adattare navigazione e ritorno dai capitoli.
 - [x] Verificare accesso studente, restrizioni e navigazione su desktop e telefono.
+
+# Slide 1.3
+
+- [x] Separare architettura, eventi e contenuti in una configurazione riutilizzabile.
+- [x] Realizzare DataFlowExplorer e gli otto momenti interattivi.
+- [x] Registrare e pubblicare il capitolo 1.3 nel corso esistente.
+- [x] Aggiungere ed eseguire i test sui comportamenti della simulazione.
+- [x] Verificare il flusso completo su desktop e telefono.
