@@ -48,9 +48,9 @@ function Layout() {
       <aside className="nr-sidebar sticky top-0 z-30 shrink-0 text-sidebar-foreground md:h-screen md:w-56 md:p-4">
         <div className="flex h-14 items-center justify-between gap-2 px-4 md:mb-8 md:h-auto md:px-0">
           <div className="nr-brand min-w-0">CYBERSECURITY / 101</div>
-          <Button size="icon" variant="ghost" className="md:hidden" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-label={menuOpen ? "Chiudi menu" : "Apri menu"}>
+          <div className="md:hidden"><Button size="icon" variant="ghost" onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen} aria-label={menuOpen ? "Chiudi menu" : "Apri menu"}>
             {menuOpen ? <X /> : <Menu />}
-          </Button>
+          </Button></div>
         </div>
         <div className={`${menuOpen ? "block" : "hidden"} border-t border-sidebar-border px-4 pb-4 md:flex md:h-[calc(100%-4rem)] md:flex-col md:border-0 md:p-0`}>
           <nav aria-label="Navigazione principale" className="flex-1 space-y-1 pt-3 md:pt-0">
