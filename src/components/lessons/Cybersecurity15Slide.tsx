@@ -1,13 +1,9 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { DataFlowExplorer } from "@/components/data-flow/DataFlowExplorer";
+import { TransportDiagram } from "./TransportDiagram";
 import { Button } from "@/components/ui/button";
 import { HudNotice, HudPanel, HudTabPanel, HudTabs } from "@/design-system/nightrunner";
-import {
-  architecture,
-  documentRequest,
-  documentResponse,
-} from "@/content/lessons/cybersecurity-1-3";
+import { documentRequest, documentResponse } from "@/content/lessons/cybersecurity-1-3";
 import {
   originalProtocols,
   tlsLesson,
@@ -15,6 +11,8 @@ import {
   type ConnectionProtocol,
   type TlsLinkId,
 } from "@/content/lessons/cybersecurity-1-5";
+
+import "./DataFlowLessons.css";
 
 const tabsId = "cybersecurity-1-5-links";
 const tabs = Object.entries(tlsLinks).map(([value, { label }]) => ({ value, label }));
@@ -28,24 +26,21 @@ export function Cybersecurity15Slide() {
   const readable = protocol === "HTTP" || atEndpoint;
 
   return (
-    <article>
+    <article className="max-w-[1180px]">
       <PageHeader title={tlsLesson.title} subtitle={tlsLesson.subtitle} />
-      <HudPanel heading="Osserva la stessa richiesta da due punti" className="min-w-0 space-y-4">
-        <p>
-          Cambia il protocollo di un tratto e confronta ciò che si può leggere. Ogni tratto ha una
-          configurazione indipendente. Richiesta, risposta e osservazioni sono simulate.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Browser → reverse proxy <strong>{protocolByLink["browser-proxy"]}</strong>
-          {" · "}Proxy → backend <strong>{protocolByLink["proxy-backend"]}</strong>
+      <HudPanel heading="Dove si può leggere il contratto 42?" className="min-w-0 space-y-4">
+        <p className="text-muted-foreground">
+          Scegli un tratto e cambia protocollo. Segui il simbolo dell’occhio per vedere da dove stai
+          osservando la richiesta simulata.
         </p>
         <HudTabs
           id={tabsId}
-          className="flex-wrap"
+          className="flow-lesson-tabs flex-wrap"
           label="Collegamento osservato"
           items={tabs}
           value={link}
           onValueChange={(value) => {
+            if (value === link) return;
             setLink(value as TlsLinkId);
             setAtEndpoint(false);
           }}
@@ -68,6 +63,7 @@ export function Cybersecurity15Slide() {
                       size="sm"
                       aria-pressed={protocol === option}
                       onClick={() => {
+                        if (option === protocol) return;
                         setProtocolByLink((current) => ({ ...current, [link]: option }));
                         setAtEndpoint(false);
                       }}
@@ -106,6 +102,11 @@ export function Cybersecurity15Slide() {
             )}
           </HudTabPanel>
         ))}
+        <TransportDiagram
+          activeLink={link}
+          protocolByLink={protocolByLink}
+          atEndpoint={atEndpoint}
+        />
         <section aria-label="Osservazione del traffico" aria-live="polite" className="space-y-3">
           {readable ? (
             <>
@@ -128,9 +129,8 @@ export function Cybersecurity15Slide() {
           ) : (
             <>
               <p>
-                TLS protegge il percorso HTTP, le intestazioni (inclusi i cookie) e il corpo della
-                risposta. Sul collegamento si possono comunque osservare metadati di rete, come
-                indirizzi IP, tempi e dimensioni del traffico.
+                Il percorso HTTP, le intestazioni e il contenuto sono cifrati. Restano osservabili
+                gli indirizzi IP, i tempi e le dimensioni del traffico.
               </p>
               <TrafficMessage
                 label="Dati sul collegamento"
@@ -139,15 +139,6 @@ export function Cybersecurity15Slide() {
             </>
           )}
         </section>
-        <DataFlowExplorer
-          config={architecture}
-          level={2}
-          highlight={{
-            connections: [link],
-            boundaries: [link === "browser-proxy" ? "client-service" : "gateway-application"],
-          }}
-          showTrustBoundaries
-        />
         <HudNotice>
           HTTPS protegge riservatezza e integrità del traffico e consente al client di verificare
           l'identità del server tramite il certificato. Ogni collegamento ha una protezione propria.
@@ -160,8 +151,8 @@ export function Cybersecurity15Slide() {
 
 function TrafficMessage({ label, message }: { label: string; message: string }) {
   return (
-    <div className="min-w-0 border border-border bg-card p-3">
-      <p className="mb-2 font-semibold text-accent">{label}</p>
+    <div className="min-w-0 border border-border border-l-2 border-l-accent bg-card px-4 py-3">
+      <h3 className="mb-2 text-sm font-semibold text-accent">{label}</h3>
       <pre className="font-mono text-xs leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere]">
         {message}
       </pre>

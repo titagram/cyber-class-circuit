@@ -9,6 +9,7 @@ export const attackSurfaceLesson = {
 type Perspective = {
   label: string;
   highlight: DataFlowHighlight;
+  focusNodeId: string;
   access: string;
   impact: string;
   control: string;
@@ -17,6 +18,7 @@ type Perspective = {
 export const attackPerspectives = {
   device: {
     label: "Dispositivo utente",
+    focusNodeId: "browser",
     highlight: { nodes: ["browser"] },
     access: "Il contratto è già aperto su un dispositivo a cui può accedere un'altra persona.",
     impact:
@@ -26,6 +28,7 @@ export const attackPerspectives = {
   },
   network: {
     label: "Collegamento di rete",
+    focusNodeId: "proxy",
     highlight: {
       connections: ["browser-proxy", "proxy-backend"],
       boundaries: ["client-service", "gateway-application"],
@@ -39,6 +42,7 @@ export const attackPerspectives = {
   },
   application: {
     label: "Ingresso e API",
+    focusNodeId: "backend",
     highlight: {
       nodes: ["proxy", "backend"],
       connections: ["proxy-backend"],
@@ -52,6 +56,7 @@ export const attackPerspectives = {
   },
   copies: {
     label: "Archivi e copie",
+    focusNodeId: "storage",
     highlight: {
       nodes: ["database", "storage", "backup", "logs"],
       boundaries: ["application-data"],

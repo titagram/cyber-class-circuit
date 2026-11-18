@@ -32,19 +32,34 @@ describe("Slide 1.5", () => {
     render(<Lesson />);
 
     const observation = screen.getByRole("region", { name: "Osservazione del traffico" });
+    const diagram = within(
+      screen.getByRole("figure", { name: "Percorso della richiesta del contratto 42" }),
+    );
+    const externalLink = diagram.getByTestId("data-flow-connection-browser-proxy");
+    const internalLink = diagram.getByTestId("data-flow-connection-proxy-backend");
+
+    expect(externalLink).toHaveAttribute("data-protocol", "HTTPS");
+    expect(within(externalLink).getByTestId("traffic-observer")).toBeVisible();
+    expect(internalLink).toHaveAttribute("data-protocol", "HTTP");
     expect(within(observation).queryByText(/GET \/api\/documents\/42/)).not.toBeInTheDocument();
     expect(within(observation).getByText(/indirizzi IP/)).toBeVisible();
 
     fireEvent.click(screen.getByRole("tab", { name: "Proxy → Backend" }));
-    expect(screen.getByTestId("data-flow-connection-proxy-backend")).toHaveAttribute(
-      "data-highlighted",
-      "true",
-    );
+    expect(internalLink).toHaveAttribute("data-highlighted", "true");
+    expect(within(internalLink).getByTestId("traffic-observer")).toBeVisible();
     expect(within(observation).getByText(/GET \/api\/documents\/42/)).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "HTTPS" }));
+    expect(internalLink).toHaveAttribute("data-protocol", "HTTPS");
+    expect(internalLink).toHaveTextContent("Cifrato TLS");
+    expect(externalLink).toHaveAttribute("data-protocol", "HTTPS");
     expect(within(observation).queryByText(/GET \/api\/documents\/42/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "All’endpoint TLS" }));
+    expect(within(internalLink).queryByTestId("traffic-observer")).not.toBeInTheDocument();
+    const backend = diagram.getByTestId("data-flow-node-backend");
+    expect(within(backend).getByTestId("traffic-observer")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "HTTPS" }));
+    expect(within(backend).getByTestId("traffic-observer")).toBeVisible();
     expect(within(observation).getByText(/GET \/api\/documents\/42/)).toBeVisible();
 
     fireEvent.click(screen.getByRole("tab", { name: "Browser → Reverse proxy" }));

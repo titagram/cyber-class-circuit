@@ -1,0 +1,186 @@
+.transport-diagram {
+  min-width: 0;
+  border: 1px solid var(--nr-border);
+  border-top: 2px solid var(--nr-cyan);
+  background: var(--nr-panel-end);
+}
+
+.transport-path {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr) minmax(0, 1.22fr)) minmax(0, 1fr);
+  align-items: center;
+  max-width: 52rem;
+  margin-inline: auto;
+  padding: clamp(0.65rem, 2.5vw, 1.5rem);
+}
+
+.transport-node {
+  position: relative;
+  display: grid;
+  min-height: 5.25rem;
+  place-content: center;
+  justify-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--nr-border);
+  padding: 0.35rem;
+  background: var(--nr-panel);
+  color: var(--nr-text);
+  text-align: center;
+  font: 700 clamp(0.76rem, 2.4vw, 1.13rem) / 1.05 var(--nr-display-font);
+}
+
+.transport-node > svg {
+  width: clamp(1.1rem, 3.4vw, 1.7rem);
+  height: auto;
+  color: var(--nr-muted);
+}
+
+.transport-node[data-observed="true"] {
+  border-color: var(--nr-yellow);
+  background: color-mix(in srgb, var(--nr-yellow) 10%, var(--nr-panel));
+}
+
+.transport-node[data-observed="true"] > svg {
+  color: var(--nr-yellow);
+}
+
+.transport-link {
+  --signal: var(--nr-coral);
+  display: grid;
+  min-height: 7.25rem;
+  grid-template-rows: 1fr 1.65rem 1fr;
+  justify-items: center;
+  align-items: end;
+  color: var(--nr-muted);
+}
+
+.transport-link[data-protocol="HTTPS"] {
+  --signal: var(--nr-cyan);
+}
+
+.transport-protocol {
+  margin-bottom: 0.25rem;
+  border: 1px solid transparent;
+  padding: 0.12rem 0.35rem;
+  color: var(--signal);
+  font: 700 clamp(0.65rem, 2.2vw, 0.96rem) / 1.05 var(--nr-display-font);
+}
+
+.transport-link[data-highlighted="true"] .transport-protocol {
+  border-color: var(--signal);
+  background: color-mix(in srgb, var(--signal) 13%, var(--nr-panel));
+}
+
+.transport-track {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: var(--signal);
+}
+
+.transport-track::before {
+  position: absolute;
+  inset: 50% 0 auto;
+  border-top: 1px solid currentColor;
+  opacity: 0.55;
+  content: "";
+}
+
+.transport-link[data-protocol="HTTPS"] .transport-track::before {
+  border-top-style: dashed;
+}
+
+.transport-link[data-highlighted="true"] .transport-track::before {
+  border-top-width: 2px;
+  opacity: 1;
+}
+
+.transport-arrow {
+  position: absolute;
+  inset-inline-end: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.transport-packet {
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--signal);
+  padding: 0.23rem;
+  background: var(--nr-panel-end);
+}
+
+.transport-link[data-highlighted="true"] .transport-packet {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--signal) 16%, transparent);
+}
+
+.transport-packet > svg,
+.transport-observer > svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.transport-observer {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--nr-yellow);
+  padding: 0.18rem;
+  background: var(--nr-panel);
+  color: var(--nr-yellow);
+}
+
+.transport-track > .transport-observer {
+  top: calc(100% + 0.1rem);
+}
+
+.transport-node > .transport-observer {
+  top: -0.55rem;
+  inset-inline-end: 0.28rem;
+}
+
+.transport-packet-label {
+  align-self: start;
+  margin-top: 1.55rem;
+  text-align: center;
+  font: 600 clamp(0.6rem, 1.9vw, 0.83rem) / 1 var(--nr-display-font);
+}
+
+.transport-caption {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.55rem;
+  border-top: 1px solid var(--nr-border);
+  padding: 0.5rem 0.85rem;
+  color: var(--nr-yellow);
+  font: 600 0.85rem / 1.25 var(--nr-display-font);
+}
+
+.transport-caption svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+}
+
+@media (max-width: 560px) {
+  .flow-lesson-tabs.nr-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .flow-lesson-tabs .nr-tab {
+    min-width: 0;
+    padding-inline: 0.55rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+  }
+
+  .surface-map .df-map {
+    height: 400px;
+  }
+}

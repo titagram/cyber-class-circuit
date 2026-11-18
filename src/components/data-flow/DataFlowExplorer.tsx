@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArchiveRestore,
   Database,
@@ -51,8 +51,10 @@ export function DataFlowExplorer({
   mode = "explore",
   highlight,
   showTrustBoundaries = false,
+  focusNodeId,
   className = "",
 }: DataFlowExplorerProps) {
+  const mapScroll = useRef<HTMLDivElement>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [eventIndex, setEventIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -87,6 +89,15 @@ export function DataFlowExplorer({
   const activeConnections = new Set(activeEvent ? transfers.keys() : highlight?.connections);
   const activeBoundaries = new Set(highlight?.boundaries ?? []);
   const selectedNode = visibleNodes.find((node) => node.id === selectedNodeId);
+
+  useEffect(() => {
+    if (!focusNodeId) return;
+    const map = mapScroll.current;
+    const node = visibleNodes.find(({ id }) => id === focusNodeId);
+    if (map && node && map.scrollWidth > map.clientWidth) {
+      map.scrollLeft = (node.x / config.width) * map.scrollWidth - map.clientWidth / 2;
+    }
+  }, [config.width, focusNodeId, visibleNodes]);
 
   useEffect(() => {
     if (!isPlaying || mode !== "simulate" || config.events.length < 2) return;
@@ -124,6 +135,7 @@ export function DataFlowExplorer({
     <section className={`df-explorer ${className}`} aria-label={config.label}>
       <div className="df-map-shell">
         <div
+          ref={mapScroll}
           className="df-map-scroll"
           tabIndex={0}
           role="region"

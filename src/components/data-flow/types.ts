@@ -75,5 +75,6 @@ export type DataFlowExplorerProps = {
   mode?: "explore" | "simulate";
   highlight?: DataFlowHighlight;
   showTrustBoundaries?: boolean;
+  focusNodeId?: string;
   className?: string;
 };
