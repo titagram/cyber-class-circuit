@@ -1,9 +1,11 @@
 import type { ComponentType } from "react";
 import type { Json } from "@/integrations/supabase/types";
 import { Cybersecurity11Slide } from "./Cybersecurity11Slide";
+import { Cybersecurity12Slide } from "./Cybersecurity12Slide";
 
 export const lessonRegistry: Record<string, ComponentType> = {
   "cybersecurity-1-1": Cybersecurity11Slide,
+  "cybersecurity-1-2": Cybersecurity12Slide,
 };
 
 export function getLessonKey(content: Json): string | null {

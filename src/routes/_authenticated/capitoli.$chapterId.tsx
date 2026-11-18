@@ -8,17 +8,15 @@ import { getLessonKey, lessonRegistry } from "@/components/lessons/registry";
 export const Route = createFileRoute("/_authenticated/capitoli/$chapterId")({
   head: () => ({
     meta: [
-      { title: "Slide 1.1: asset e Crime Triangle — Cybersecurity 101" },
+      { title: "Capitolo interattivo — Cybersecurity 101" },
       {
         name: "description",
-        content:
-          "Slide interattiva sugli asset da proteggere, sul Crime Triangle e sulla riduzione delle opportunità di attacco.",
+        content: "Capitolo interattivo del corso Cybersecurity per sviluppatori.",
       },
-      { property: "og:title", content: "Slide 1.1: asset e Crime Triangle — Cybersecurity 101" },
+      { property: "og:title", content: "Capitolo interattivo — Cybersecurity 101" },
       {
         property: "og:description",
-        content:
-          "Slide interattiva sugli asset da proteggere, sul Crime Triangle e sulla riduzione delle opportunità di attacco.",
+        content: "Capitolo interattivo del corso Cybersecurity per sviluppatori.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
