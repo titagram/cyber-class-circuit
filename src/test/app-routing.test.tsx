@@ -14,4 +14,12 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+
+  it("matches an interactive chapter by id", () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+
+    const matches = router.matchRoutes("/capitoli/10000000-0000-4000-8000-000000000101");
+
+    expect(matches.at(-1)?.routeId).toBe("/_authenticated/capitoli/$chapterId");
+  });
 });

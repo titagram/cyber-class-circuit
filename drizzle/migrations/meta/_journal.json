@@ -8,6 +8,13 @@
       "when": 1795000010995,
       "tag": "0000_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1795017844089,
+      "tag": "0001_add_first_cybersecurity_lesson",
+      "breakpoints": true
     }
   ]
 }

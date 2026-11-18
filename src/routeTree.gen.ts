@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCorsiRouteImport } from './routes/_authenticated/corsi'
 import { Route as AuthenticatedStudentiRouteImport } from './routes/_authenticated/studenti'
+import { Route as AuthenticatedCapitoliChapterIdRouteImport } from './routes/_authenticated/capitoli.$chapterId'
 import { Route as AuthenticatedClassiIndexRouteImport } from './routes/_authenticated/classi.index'
 import { Route as AuthenticatedClassiIdRouteImport } from './routes/_authenticated/classi.$id'
 
@@ -41,6 +42,12 @@ const AuthenticatedStudentiRoute = AuthenticatedStudentiRouteImport.update({
   path: '/studenti',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCapitoliChapterIdRoute =
+  AuthenticatedCapitoliChapterIdRouteImport.update({
+    id: '/capitoli/$chapterId',
+    path: '/capitoli/$chapterId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedClassiIndexRoute =
   AuthenticatedClassiIndexRouteImport.update({
     id: '/classi/',
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/corsi': typeof AuthenticatedCorsiRoute
   '/studenti': typeof AuthenticatedStudentiRoute
+  '/capitoli/$chapterId': typeof AuthenticatedCapitoliChapterIdRoute
   '/classi/$id': typeof AuthenticatedClassiIdRoute
   '/classi/': typeof AuthenticatedClassiIndexRoute
 }
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/corsi': typeof AuthenticatedCorsiRoute
   '/studenti': typeof AuthenticatedStudentiRoute
+  '/capitoli/$chapterId': typeof AuthenticatedCapitoliChapterIdRoute
   '/classi/$id': typeof AuthenticatedClassiIdRoute
   '/classi': typeof AuthenticatedClassiIndexRoute
 }
@@ -76,14 +85,29 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/corsi': typeof AuthenticatedCorsiRoute
   '/_authenticated/studenti': typeof AuthenticatedStudentiRoute
+  '/_authenticated/capitoli/$chapterId': typeof AuthenticatedCapitoliChapterIdRoute
   '/_authenticated/classi/$id': typeof AuthenticatedClassiIdRoute
   '/_authenticated/classi/': typeof AuthenticatedClassiIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/corsi' | '/studenti' | '/classi/$id' | '/classi/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/corsi'
+    | '/studenti'
+    | '/capitoli/$chapterId'
+    | '/classi/$id'
+    | '/classi/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/corsi' | '/studenti' | '/classi/$id' | '/classi'
+  to:
+    | '/'
+    | '/auth'
+    | '/corsi'
+    | '/studenti'
+    | '/capitoli/$chapterId'
+    | '/classi/$id'
+    | '/classi'
   id:
     | '__root__'
     | '/'
@@ -91,6 +115,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/corsi'
     | '/_authenticated/studenti'
+    | '/_authenticated/capitoli/$chapterId'
     | '/_authenticated/classi/$id'
     | '/_authenticated/classi/'
   fileRoutesById: FileRoutesById
@@ -138,6 +163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudentiRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/capitoli/$chapterId': {
+      id: '/_authenticated/capitoli/$chapterId'
+      path: '/capitoli/$chapterId'
+      fullPath: '/capitoli/$chapterId'
+      preLoaderRoute: typeof AuthenticatedCapitoliChapterIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/classi/': {
       id: '/_authenticated/classi/'
       path: '/classi'
@@ -158,6 +190,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCorsiRoute: typeof AuthenticatedCorsiRoute
   AuthenticatedStudentiRoute: typeof AuthenticatedStudentiRoute
+  AuthenticatedCapitoliChapterIdRoute: typeof AuthenticatedCapitoliChapterIdRoute
   AuthenticatedClassiIdRoute: typeof AuthenticatedClassiIdRoute
   AuthenticatedClassiIndexRoute: typeof AuthenticatedClassiIndexRoute
 }
@@ -165,6 +198,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCorsiRoute: AuthenticatedCorsiRoute,
   AuthenticatedStudentiRoute: AuthenticatedStudentiRoute,
+  AuthenticatedCapitoliChapterIdRoute: AuthenticatedCapitoliChapterIdRoute,
   AuthenticatedClassiIdRoute: AuthenticatedClassiIdRoute,
   AuthenticatedClassiIndexRoute: AuthenticatedClassiIndexRoute,
 }

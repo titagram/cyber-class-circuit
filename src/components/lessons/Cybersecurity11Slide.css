@@ -1,0 +1,411 @@
+.cyber-lesson {
+  --lesson-gap: 1rem;
+  max-width: 1180px;
+}
+
+.cyber-lesson blockquote {
+  margin: 0;
+  border-left: 2px solid var(--nr-yellow);
+  padding: 0.5rem 0 0.5rem 1rem;
+  color: var(--nr-text);
+  font: 600 clamp(1.25rem, 3vw, 1.75rem) / 1.35 var(--nr-display-font);
+}
+
+.cyber-lesson .lesson-scenario {
+  max-width: 75ch;
+  color: var(--nr-muted);
+}
+
+.cyber-lesson .lesson-moments {
+  margin-bottom: 1.5rem;
+}
+
+.cyber-lesson .lesson-panel-stack > * + * {
+  margin-top: 1.25rem;
+}
+
+.cyber-lesson .lesson-assets-layout {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.8fr) minmax(0, 1.4fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.cyber-lesson .lesson-asset-list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cyber-lesson .lesson-asset-button {
+  display: flex;
+  width: 100%;
+  min-height: 56px;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--nr-border);
+  border-radius: 0;
+  padding: 0.75rem;
+  background: var(--nr-panel);
+  color: var(--nr-text);
+  font: 600 1rem / 1.2 var(--nr-display-font);
+  text-align: left;
+  cursor: pointer;
+}
+
+.cyber-lesson .lesson-asset-button svg {
+  flex: 0 0 auto;
+  color: var(--nr-coral);
+}
+
+.cyber-lesson .lesson-asset-button[aria-pressed="true"] {
+  border-color: var(--nr-cyan);
+  background: color-mix(in srgb, var(--nr-cyan) 9%, var(--nr-panel));
+  color: var(--nr-cyan);
+}
+
+.cyber-lesson .lesson-asset-button[aria-pressed="true"] svg {
+  color: var(--nr-cyan);
+}
+
+.cyber-lesson .lesson-asset-button:hover {
+  border-color: var(--nr-cyan);
+}
+
+.cyber-lesson .lesson-asset-button:focus-visible,
+.cyber-lesson .lesson-factor:focus-visible,
+.cyber-lesson .lesson-situation-button:focus-visible {
+  outline: 2px solid var(--nr-cyan);
+  outline-offset: 3px;
+}
+
+.cyber-lesson .lesson-asset-detail {
+  min-width: 0;
+  border-left: 2px solid var(--nr-cyan);
+  padding: 0.25rem 0 0.25rem 1.25rem;
+}
+
+.cyber-lesson .lesson-asset-detail h3 {
+  margin: 0 0 0.25rem;
+  color: var(--nr-cyan);
+  font-size: 1.4rem;
+}
+
+.cyber-lesson .lesson-detail-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0 0;
+}
+
+.cyber-lesson .lesson-detail-grid dt {
+  margin-bottom: 0.25rem;
+  color: var(--nr-coral);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cyber-lesson .lesson-detail-grid dd {
+  margin: 0;
+  color: var(--nr-text);
+  font: 0.94rem / 1.6 var(--nr-body-font);
+}
+
+.cyber-lesson .lesson-triangle-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.15fr) minmax(250px, 0.85fr);
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.cyber-lesson .lesson-triangle {
+  position: relative;
+  width: 100%;
+  max-width: 590px;
+  aspect-ratio: 4 / 3;
+  margin-inline: auto;
+}
+
+.cyber-lesson .lesson-triangle-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--nr-border);
+  overflow: visible;
+}
+
+.cyber-lesson .lesson-triangle-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  transition: opacity var(--nr-fast), stroke-dasharray var(--nr-fast);
+}
+
+.cyber-lesson .lesson-triangle-reduced .lesson-line-opportunity {
+  opacity: 0.22;
+  stroke-dasharray: 8 12;
+}
+
+.cyber-lesson .lesson-factor {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  width: 31%;
+  min-height: 64px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--nr-border);
+  border-radius: 0;
+  padding: 0.5rem;
+  background: var(--nr-panel);
+  color: var(--nr-coral);
+  font: 700 clamp(0.72rem, 1.5vw, 0.98rem) / 1.15 var(--nr-display-font);
+  text-align: center;
+  transition: opacity var(--nr-fast), border-color var(--nr-fast), background var(--nr-fast);
+}
+
+.cyber-lesson button.lesson-factor {
+  appearance: none;
+  cursor: pointer;
+}
+
+.cyber-lesson .lesson-factor small {
+  margin-top: 0.25rem;
+  color: var(--nr-muted);
+  font: 0.75em / 1.1 var(--nr-body-font);
+}
+
+.cyber-lesson .lesson-factor[aria-pressed="true"] {
+  border-color: var(--nr-cyan);
+  background: color-mix(in srgb, var(--nr-cyan) 9%, var(--nr-panel));
+  color: var(--nr-cyan);
+}
+
+.cyber-lesson .lesson-factor-capacita {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.cyber-lesson .lesson-factor-motivazione {
+  bottom: 0;
+  left: 0;
+}
+
+.cyber-lesson .lesson-factor-opportunita {
+  right: 0;
+  bottom: 0;
+}
+
+.cyber-lesson .lesson-triangle-reduced .lesson-factor-opportunita {
+  opacity: 0.3;
+  border-style: dashed;
+}
+
+.cyber-lesson .lesson-triangle-center {
+  position: absolute;
+  top: 54%;
+  left: 50%;
+  width: 36%;
+  transform: translate(-50%, -50%);
+  color: var(--nr-yellow);
+  font: 700 clamp(0.7rem, 1.5vw, 0.95rem) / 1.25 var(--nr-display-font);
+  text-align: center;
+}
+
+.cyber-lesson .lesson-factor-detail {
+  border-top: 1px solid var(--nr-border);
+  padding-top: 1rem;
+}
+
+.cyber-lesson .lesson-factor-detail h3 {
+  margin: 0;
+  color: var(--nr-cyan);
+  font-size: 1.25rem;
+}
+
+.cyber-lesson .lesson-factor-detail p {
+  margin: 0.75rem 0 0;
+}
+
+.cyber-lesson .lesson-example {
+  border-left: 2px solid var(--nr-yellow);
+  padding-left: 0.85rem;
+  color: var(--nr-text);
+}
+
+.cyber-lesson .lesson-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--nr-coral);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cyber-lesson .lesson-risk-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  background: var(--nr-border);
+  border: 1px solid var(--nr-border);
+}
+
+.cyber-lesson .lesson-risk-grid > div {
+  padding: 1rem;
+  background: var(--nr-panel);
+}
+
+.cyber-lesson .lesson-risk-grid dt {
+  color: var(--nr-cyan);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cyber-lesson .lesson-risk-grid dd {
+  margin: 0.5rem 0 0;
+  color: var(--nr-muted);
+  font: 0.9rem / 1.55 var(--nr-body-font);
+}
+
+.cyber-lesson .lesson-situation-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.cyber-lesson .lesson-situation-button {
+  min-height: 52px;
+  border: 1px solid var(--nr-border);
+  border-radius: 0;
+  padding: 0.75rem 1rem;
+  background: var(--nr-panel);
+  color: var(--nr-muted);
+  font: 600 1rem / 1.25 var(--nr-display-font);
+  cursor: pointer;
+}
+
+.cyber-lesson .lesson-situation-button[aria-pressed="true"] {
+  border-color: var(--nr-cyan);
+  color: var(--nr-cyan);
+  background: color-mix(in srgb, var(--nr-cyan) 9%, var(--nr-panel));
+}
+
+.cyber-lesson .lesson-reduction-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 1fr) minmax(260px, 0.9fr);
+  gap: 1.5rem;
+  align-items: center;
+  margin-top: 1.25rem;
+}
+
+.cyber-lesson .lesson-situation-detail {
+  border-left: 2px solid var(--nr-yellow);
+  padding-left: 1rem;
+}
+
+.cyber-lesson .lesson-situation-detail h3 {
+  margin: 0;
+  color: var(--nr-yellow);
+  font-size: 1.25rem;
+}
+
+.cyber-lesson .lesson-situation-detail p {
+  margin: 0.75rem 0 0;
+}
+
+.cyber-lesson .lesson-conclusion {
+  border-top: 1px solid var(--nr-border);
+  padding-top: 1.5rem;
+}
+
+.cyber-lesson .lesson-conclusion h2 {
+  margin: 0 0 0.75rem;
+  color: var(--nr-yellow);
+  font-size: 1.5rem;
+  text-transform: uppercase;
+}
+
+.cyber-lesson .lesson-conclusion p {
+  max-width: 80ch;
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.cyber-lesson .lesson-next-question {
+  margin-top: 1.5rem;
+}
+
+.cyber-lesson .lesson-next-question strong {
+  color: var(--nr-cyan);
+  font-size: 1.05rem;
+}
+
+.cyber-lesson .lesson-step-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.cyber-lesson .lesson-step-actions > :only-child {
+  margin-left: auto;
+}
+
+@media (max-width: 800px) {
+  .cyber-lesson .lesson-assets-layout,
+  .cyber-lesson .lesson-triangle-layout,
+  .cyber-lesson .lesson-reduction-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cyber-lesson .lesson-risk-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cyber-lesson .lesson-factor-detail {
+    border-top: 0;
+    border-left: 1px solid var(--nr-border);
+    padding-top: 0;
+    padding-left: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cyber-lesson .lesson-situation-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .cyber-lesson .lesson-triangle {
+    min-height: 285px;
+    aspect-ratio: auto;
+  }
+
+  .cyber-lesson .lesson-factor {
+    width: 36%;
+    min-height: 62px;
+    padding: 0.35rem;
+  }
+
+  .cyber-lesson .lesson-triangle-center {
+    width: 42%;
+  }
+
+  .cyber-lesson .lesson-step-actions .nr-app-button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cyber-lesson .lesson-triangle-line,
+  .cyber-lesson .lesson-factor {
+    transition: none;
+  }
+}
