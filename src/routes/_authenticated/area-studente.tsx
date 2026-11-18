@@ -4,7 +4,8 @@ import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { HudPanel } from "@/design-system/nightrunner";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
-import { getLessonKey, lessonRegistry } from "@/components/lessons/registry";
+import { lessonRegistry } from "@/components/lessons/registry";
+import { getCourseChapters, getLessonKey } from "@/lib/chapters";
 
 export const Route = createFileRoute("/_authenticated/area-studente")({
   head: () => ({
@@ -45,7 +46,7 @@ function StudentAreaPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {data.map((course) => {
-            const chapters = [...course.chapters].sort((a, b) => a.position - b.position);
+            const chapters = getCourseChapters(course.id, course.chapters);
             return (
               <HudPanel key={course.id} heading={course.title}>
                 {course.description && <p className="mb-3 text-sm text-muted-foreground">{course.description}</p>}

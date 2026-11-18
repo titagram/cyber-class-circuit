@@ -4,7 +4,8 @@ import { ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { HudPanel } from "@/design-system/nightrunner";
 import { EmptyState, PageHeader } from "@/components/PageHeader";
-import { getLessonKey, lessonRegistry } from "@/components/lessons/registry";
+import { lessonRegistry } from "@/components/lessons/registry";
+import { getCourseChapters, getLessonKey } from "@/lib/chapters";
 
 export const Route = createFileRoute("/_authenticated/corsi")({
   head: () => ({
@@ -42,7 +43,7 @@ function CorsiPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {data.map((c) => {
-            const chapters = [...c.chapters].sort((a, b) => a.position - b.position);
+            const chapters = getCourseChapters(c.id, c.chapters);
             const classes = c.class_courses.map((x) => x.classes?.name).filter(Boolean);
             return (
               <HudPanel key={c.id} heading={c.title}>

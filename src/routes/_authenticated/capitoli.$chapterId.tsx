@@ -4,7 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { EmptyState } from "@/components/PageHeader";
-import { getLessonKey, lessonRegistry } from "@/components/lessons/registry";
+import { lessonRegistry } from "@/components/lessons/registry";
+import { getLessonKey, getSourceChapter } from "@/lib/chapters";
 
 export const Route = createFileRoute("/_authenticated/capitoli/$chapterId")({
   head: () => ({
@@ -32,6 +33,18 @@ function ChapterPage() {
   const { data: chapter, isLoading } = useQuery({
     queryKey: ["chapter", user?.id, chapterId],
     queryFn: async () => {
+      const sourceChapter = getSourceChapter(chapterId);
+      if (sourceChapter) {
+        // Use the same RLS-controlled course lookup for source chapters and deep links.
+        const { data: course, error } = await supabase
+          .from("courses")
+          .select("id, title")
+          .eq("id", sourceChapter.course_id)
+          .maybeSingle();
+        if (error) throw error;
+        return course ? { ...sourceChapter, courses: course } : null;
+      }
+
       const { data, error } = await supabase
         .from("chapters")
         .select("id, course_id, title, content, courses(id, title)")
