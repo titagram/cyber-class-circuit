@@ -1,18 +1,40 @@
 import { useState } from "react";
+import {
+  ArrowDown,
+  ArrowRight,
+  Archive as ArchiveIcon,
+  Database,
+  FileLock2,
+  FileText,
+  KeyRound,
+  LockKeyhole,
+  LockKeyholeOpen,
+  ShieldCheck,
+  ShieldX,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import "./TrustLabs.css";
 
 type KeyVersion = 1 | 2;
 type Archive = { ciphertext: string; dek: string; kekVersion: KeyVersion };
 type RecoverySource = "Storage" | "Backup";
-type Recovery = { source: RecoverySource; message: string; recovered: boolean };
+type RecoveryResult = "access-denied" | "key-disabled" | "recovered";
+type Recovery = { source: RecoverySource; archive: Archive; result: RecoveryResult };
+type StorageChange = "rewrap" | "encrypt";
 
 const originalArchive: Archive = { ciphertext: "CT-42A", dek: "DEK-A", kekVersion: 1 };
+const recoveryMessages = {
+  "access-denied": "Accesso al KMS negato",
+  "key-disabled": "KEK v1 disattivata",
+  recovered: "Contratto recuperato",
+};
 
 export function KeyLifecycleLab() {
   const [activeKek, setActiveKek] = useState<KeyVersion>(1);
   const [oldKekEnabled, setOldKekEnabled] = useState(true);
   const [kmsAccess, setKmsAccess] = useState(true);
   const [storage, setStorage] = useState(originalArchive);
+  const [storageChange, setStorageChange] = useState<StorageChange | null>(null);
   const [recovery, setRecovery] = useState<Recovery | null>(null);
 
   const storageKeyEnabled = storage.kekVersion === 2 || oldKekEnabled;
@@ -20,24 +42,43 @@ export function KeyLifecycleLab() {
   const canReplaceDek = storageKeyEnabled && kmsAccess && storage.dek === originalArchive.dek;
 
   function recover(source: RecoverySource, archive: Archive) {
-    if (!kmsAccess) {
-      setRecovery({ source, message: "Accesso al KMS negato", recovered: false });
-      return;
-    }
-    if (archive.kekVersion === 1 && !oldKekEnabled) {
-      setRecovery({ source, message: "KEK v1 disattivata", recovered: false });
-      return;
-    }
-    setRecovery({ source, message: "Contratto recuperato", recovered: true });
+    const result = !kmsAccess
+      ? "access-denied"
+      : archive.kekVersion === 1 && !oldKekEnabled
+        ? "key-disabled"
+        : "recovered";
+
+    setRecovery({ source, archive, result });
   }
 
   return (
-    <div className="space-y-4">
-      <section className="crypto-card space-y-3" aria-label="Chiavi nel KMS">
-        <h3 className="crypto-label">Servizio di gestione delle chiavi (KMS)</h3>
-        <div className="crypto-grid" aria-live="polite">
-          <p className="crypto-readout">Nuovi avvolgimenti · KEK v{activeKek}</p>
-          <p className="crypto-readout">KEK v1 · {oldKekEnabled ? "disponibile" : "disattivata"}</p>
+    <section
+      className="crypto-stage trust-stage"
+      aria-label="Laboratorio del ciclo di vita delle chiavi"
+    >
+      <header className="crypto-stage-label">KMS e copie del contratto</header>
+      <section className="crypto-node trust-node kms-vault" aria-label="Chiavi nel KMS">
+        <div className="trust-node-heading">
+          <LockKeyhole aria-hidden="true" />
+          <h3>Servizio di gestione delle chiavi (KMS)</h3>
+        </div>
+        <div className="kms-versions" aria-live="polite">
+          <div className="trust-data" data-state={oldKekEnabled ? "active" : "blocked"}>
+            {oldKekEnabled ? <KeyRound aria-hidden="true" /> : <LockKeyhole aria-hidden="true" />}
+            <strong>KEK v1</strong>
+            <span>
+              {activeKek === 1
+                ? "Nuovi avvolgimenti"
+                : oldKekEnabled
+                  ? "Disponibile"
+                  : "Disattivata"}
+            </span>
+          </div>
+          <div className="trust-data" data-state={activeKek === 2 ? "active" : undefined}>
+            {activeKek === 2 ? <KeyRound aria-hidden="true" /> : <LockKeyhole aria-hidden="true" />}
+            <strong>KEK v2</strong>
+            <span>{activeKek === 2 ? "Nuovi avvolgimenti" : "Non ancora attiva"}</span>
+          </div>
         </div>
         <div className="crypto-controls">
           <Button
@@ -61,6 +102,75 @@ export function KeyLifecycleLab() {
           >
             {oldKekEnabled ? "Disattiva KEK v1" : "Riattiva KEK v1"}
           </Button>
+        </div>
+      </section>
+
+      <div className="signature-join" data-arrows="split" aria-hidden="true">
+        <ArrowDown />
+        <ArrowDown />
+      </div>
+
+      <div className="kms-archives">
+        <ArchiveCard
+          title="Object storage"
+          archive={storage}
+          change={storageChange}
+          recoverLabel="Recupera dallo storage"
+          selected={recovery?.source === "Storage"}
+          onRecover={() => recover("Storage", storage)}
+        />
+        <ArchiveCard
+          title="Backup storico"
+          archive={originalArchive}
+          historic
+          recoverLabel="Recupera dal backup"
+          selected={recovery?.source === "Backup"}
+          onRecover={() => recover("Backup", originalArchive)}
+        />
+      </div>
+
+      <div className="kms-operation">
+        <div
+          className="crypto-controls"
+          role="group"
+          aria-label="Modifica della cifratura nello storage"
+        >
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!canRewrap}
+            onClick={() => {
+              setStorage((archive) => ({ ...archive, kekVersion: activeKek }));
+              setStorageChange("rewrap");
+              setRecovery(null);
+            }}
+          >
+            Ricifra la DEK dello storage
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={!canReplaceDek}
+            onClick={() => {
+              setStorage({ ciphertext: "CT-42B", dek: "DEK-B", kekVersion: activeKek });
+              setStorageChange("encrypt");
+              setRecovery(null);
+            }}
+          >
+            Cifra il file con una nuova DEK
+          </Button>
+        </div>
+        <p aria-live="polite">
+          {storageChange === "rewrap" &&
+            "Rewrap · cambia la KEK che protegge la DEK. Il file cifrato resta identico."}
+          {storageChange === "encrypt" &&
+            "Nuova DEK · cambiano la chiave del file e il file cifrato."}
+        </p>
+      </div>
+
+      <section className="kms-recovery" aria-label="Prova di recupero">
+        <div className="kms-recovery-heading">
+          <h3 className="crypto-label">Prova di recupero</h3>
           <Button
             size="sm"
             variant="outline"
@@ -72,108 +182,123 @@ export function KeyLifecycleLab() {
             {kmsAccess ? "Revoca accesso al KMS" : "Ripristina accesso al KMS"}
           </Button>
         </div>
-        <p className="crypto-status" data-tone={kmsAccess ? "good" : "warning"} aria-live="polite">
-          Backend · {kmsAccess ? "accesso al KMS concesso" : "accesso al KMS revocato"}
-        </p>
-      </section>
 
-      <div className="crypto-grid">
-        <ArchiveCard
-          title="Object storage"
-          archive={storage}
-          recoverLabel="Recupera dallo storage"
-          onRecover={() => recover("Storage", storage)}
-        />
-        <ArchiveCard
-          title="Backup storico"
-          archive={originalArchive}
-          recoverLabel="Recupera dal backup"
-          onRecover={() => recover("Backup", originalArchive)}
-        />
-      </div>
-
-      <div
-        className="crypto-controls"
-        role="group"
-        aria-label="Modifica della cifratura nello storage"
-      >
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!canRewrap}
-          onClick={() => {
-            setStorage({ ...storage, kekVersion: activeKek });
-            setRecovery(null);
-          }}
-        >
-          Ricifra la DEK dello storage
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!canReplaceDek}
-          onClick={() => {
-            setStorage({ ciphertext: "CT-42B", dek: "DEK-B", kekVersion: activeKek });
-            setRecovery(null);
-          }}
-        >
-          Cifra il file con una nuova DEK
-        </Button>
-      </div>
-
-      <div role="status" className="crypto-card space-y-2">
-        <p className="crypto-label">Prova di recupero</p>
-        {recovery ? (
-          <>
-            <p className="crypto-status" data-tone={recovery.recovered ? "good" : "warning"}>
-              {recovery.source} · {recovery.message}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {recovery.recovered
-                ? "Il KMS decifra la DEK con la versione di KEK indicata. Con la DEK il backend decifra il file."
-                : "Il backend non riesce a recuperare la DEK e il file resta cifrato."}
-            </p>
-          </>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Scegli da quale copia recuperare il contratto 42.
+        <div aria-live="polite">
+          <RecoveryPath recovery={recovery} kmsAccess={kmsAccess} />
+          <p
+            className="crypto-legend"
+            data-state={
+              recovery?.result === "recovered" ? "success" : recovery ? "blocked" : undefined
+            }
+          >
+            {recovery
+              ? `${recovery.source} · ${recoveryMessages[recovery.result]}`
+              : "Scegli una copia da recuperare."}
           </p>
-        )}
-      </div>
-
-      <p className="text-sm text-muted-foreground">
-        La DEK (Data Encryption Key) cifra il file. La KEK (Key Encryption Key) protegge la DEK e
-        resta nel KMS. Ruotare la KEK cambia la versione predefinita per le nuove cifrature.
-        Ricifrare la DEK (rewrap) mantiene intatto il file cifrato. Il backup storico conserva la
-        propria copia della DEK cifrata e dipende ancora dalla KEK v1.
+        </div>
+      </section>
+      <p className="crypto-legend">
+        La DEK cifra il file. La KEK protegge la DEK e rimane nel KMS.
       </p>
-    </div>
+    </section>
   );
 }
 
 function ArchiveCard({
   title,
   archive,
+  change,
+  selected,
+  historic = false,
   recoverLabel,
   onRecover,
 }: {
   title: string;
   archive: Archive;
+  change?: StorageChange | null;
+  selected: boolean;
+  historic?: boolean;
   recoverLabel: string;
   onRecover: () => void;
 }) {
+  const Icon = historic ? ArchiveIcon : Database;
+
   return (
-    <section className="crypto-card space-y-3" aria-label={title}>
-      <h3 className="crypto-label">{title}</h3>
-      <div className="space-y-1" aria-live="polite">
-        <p className="crypto-readout">Contratto 42 cifrato · {archive.ciphertext}</p>
-        <p className="crypto-readout">
-          {archive.dek} cifrata con KEK v{archive.kekVersion}
+    <section
+      className="crypto-node trust-node"
+      aria-label={title}
+      data-state={selected ? "active" : undefined}
+    >
+      <div className="trust-node-heading">
+        <Icon aria-hidden="true" />
+        <div>
+          <h3>{title}</h3>
+          <p>{historic ? "Copia storica" : "Copia corrente"}</p>
+        </div>
+      </div>
+      <div className="kms-archive-values" aria-live="polite">
+        <p className="trust-data" data-state={change === "encrypt" ? "active" : undefined}>
+          <FileLock2 aria-hidden="true" />
+          <span>File cifrato</span>
+          <code>{archive.ciphertext}</code>
+        </p>
+        <p className="trust-data" data-state={change ? "active" : undefined}>
+          <LockKeyhole aria-hidden="true" />
+          <code>
+            {archive.dek} cifrata con KEK v{archive.kekVersion}
+          </code>
         </p>
       </div>
-      <Button size="sm" onClick={onRecover}>
-        {recoverLabel}
+      <Button size="sm" variant={selected ? "default" : "outline"} onClick={onRecover}>
+        {recoverLabel} <ArrowRight aria-hidden="true" />
       </Button>
     </section>
+  );
+}
+
+function RecoveryPath({ recovery, kmsAccess }: { recovery: Recovery | null; kmsAccess: boolean }) {
+  const kekVersion = recovery?.archive.kekVersion;
+  const accessDenied = recovery?.result === "access-denied";
+  const keyDisabled = recovery?.result === "key-disabled";
+  const recovered = recovery?.result === "recovered";
+  const AccessIcon = kmsAccess ? ShieldCheck : ShieldX;
+  const FileIcon = recovered ? FileText : FileLock2;
+  const KeyIcon = recovered ? LockKeyholeOpen : LockKeyhole;
+
+  return (
+    <ol className="kms-path" aria-label="Percorso di recupero">
+      <li
+        className="crypto-node trust-node"
+        data-state={kmsAccess ? (recovery ? "success" : "active") : "blocked"}
+      >
+        <AccessIcon aria-hidden="true" />
+        <div>
+          <strong>Accesso al KMS</strong>
+          <span>{kmsAccess ? "Permesso concesso" : "Permesso negato"}</span>
+        </div>
+      </li>
+      <li
+        className="crypto-node trust-node"
+        data-state={keyDisabled ? "blocked" : recovered ? "success" : undefined}
+      >
+        <KeyIcon aria-hidden="true" />
+        <div>
+          <strong>Decifratura della DEK</strong>
+          <span>
+            {!recovery && "Versione della KEK indicata nella copia"}
+            {accessDenied && `KEK v${kekVersion} non raggiunta`}
+            {keyDisabled && `KEK v${kekVersion} disattivata`}
+            {recovered && `KEK v${kekVersion} → ${recovery.archive.dek}`}
+          </span>
+        </div>
+      </li>
+      <li className="crypto-node trust-node" data-state={recovered ? "success" : undefined}>
+        <FileIcon aria-hidden="true" />
+        <div>
+          <strong>Contratto 42</strong>
+          <span>{recovered ? "In chiaro" : "Resta cifrato"}</span>
+        </div>
+      </li>
+    </ol>
   );
 }

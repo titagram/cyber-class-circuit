@@ -1,9 +1,8 @@
 import type { ComponentType } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, ExternalLink, Lightbulb } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { HudPanel } from "@/design-system/nightrunner";
 import { chapter2, cryptoLessonIds, type CryptoLessonId } from "@/content/lessons/chapter2";
 import { AuthenticatedEncryptionLab, IntegrityLab } from "./SymmetricLabs";
 import { ModularMathLab } from "./ModularMathLab";
@@ -28,26 +27,23 @@ export function Chapter2Lesson({ id }: { id: CryptoLessonId }) {
 
   return (
     <article className="crypto-lesson">
-      <PageHeader title={lesson.title} subtitle={lesson.subtitle} />
-
-      <HudPanel heading={lesson.question} className="crypto-intro">
-        <p>{lesson.scenario}</p>
-      </HudPanel>
+      <PageHeader title={lesson.title} subtitle={lesson.question} />
 
       <div className="crypto-lab">
         <Lab />
       </div>
 
-      <section className="crypto-takeaway" aria-label="Che cosa portiamo con noi">
-        <Lightbulb aria-hidden="true" />
-        <div>
-          <h2>Che cosa portiamo con noi</h2>
+      <details className="crypto-takeaway">
+        <summary>
+          Che cosa portiamo con noi <ChevronDown aria-hidden="true" />
+        </summary>
+        <div className="crypto-takeaway-body">
           <p>{lesson.takeaway}</p>
           <a href={lesson.reference.href} target="_blank" rel="noreferrer">
             {lesson.reference.label} <ExternalLink aria-hidden="true" />
           </a>
         </div>
-      </section>
+      </details>
 
       <nav className="crypto-pagination" aria-label="Altre lezioni del modulo">
         {previous && (

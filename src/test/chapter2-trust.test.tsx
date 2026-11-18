@@ -69,6 +69,23 @@ describe("Simulazioni di fiducia e ciclo di vita", () => {
     expect(screen.queryByText(/GET \/api\/documents\/42/)).not.toBeInTheDocument();
   });
 
+  it("fa avanzare il tratto selezionato e riparte dallo scambio effimero", () => {
+    render(<TlsHandshakeLab />);
+    const button = (name: string) => screen.getByRole("button", { name });
+
+    fireEvent.click(button("Passo successivo"));
+    expect(button("Verifica certificato")).toHaveAttribute("aria-current", "step");
+    fireEvent.click(button("Nome diverso"));
+    fireEvent.click(button("Ricomincia il tratto"));
+    expect(button("Scambio effimero")).toHaveAttribute("aria-current", "step");
+    fireEvent.click(button("Passo successivo"));
+    expect(screen.getByText("Handshake interrotto")).toBeVisible();
+
+    fireEvent.click(button("Proxy → Backend"));
+    expect(button("Scambio effimero")).toHaveAttribute("aria-current", "step");
+    expect(button("Passo successivo")).toBeEnabled();
+  });
+
   it("mantiene la chiave storica nel backup e applica l'accesso al KMS", () => {
     render(<KeyLifecycleLab />);
     const button = (name: string) => screen.getByRole("button", { name });
@@ -87,6 +104,9 @@ describe("Simulazioni di fiducia e ciclo di vita", () => {
     expect(screen.getByText("Storage · Contratto recuperato")).toBeVisible();
     fireEvent.click(button("Recupera dal backup"));
     expect(screen.getByText("Backup · KEK v1 disattivata")).toBeVisible();
+    const recoveryPath = within(screen.getByRole("list", { name: "Percorso di recupero" }));
+    expect(recoveryPath.getByText("Permesso concesso")).toBeVisible();
+    expect(recoveryPath.getByText("KEK v1 disattivata")).toBeVisible();
     fireEvent.click(button("Riattiva KEK v1"));
     fireEvent.click(button("Recupera dal backup"));
     expect(screen.getByText("Backup · Contratto recuperato")).toBeVisible();
@@ -94,6 +114,8 @@ describe("Simulazioni di fiducia e ciclo di vita", () => {
     fireEvent.click(button("Revoca accesso al KMS"));
     fireEvent.click(button("Recupera dallo storage"));
     expect(screen.getByText("Storage · Accesso al KMS negato")).toBeVisible();
+    expect(recoveryPath.getByText("Permesso negato")).toBeVisible();
+    expect(recoveryPath.getByText("KEK v2 non raggiunta")).toBeVisible();
     expect(button("Cifra il file con una nuova DEK")).toBeDisabled();
     fireEvent.click(button("Ripristina accesso al KMS"));
     fireEvent.click(button("Cifra il file con una nuova DEK"));

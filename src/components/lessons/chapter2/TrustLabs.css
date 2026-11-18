@@ -1,0 +1,641 @@
+.trust-stage {
+  --trust-signal: var(--nr-cyan);
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+}
+
+.trust-stage [data-state="blocked"] {
+  --trust-signal: var(--nr-off-text);
+}
+
+.trust-stage [data-state="success"] {
+  --trust-signal: var(--nr-cyan);
+}
+
+.trust-stage .crypto-legend {
+  margin-top: 0;
+}
+
+.trust-stage .nr-button {
+  max-width: 100%;
+  height: auto;
+  white-space: normal;
+}
+
+.trust-node {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  justify-items: start;
+  gap: 0.65rem;
+  padding: 0.8rem;
+}
+
+.trust-node-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.trust-node-heading > svg,
+.kms-path svg {
+  width: 1.45rem;
+  height: 1.45rem;
+  flex: none;
+  color: var(--trust-signal);
+}
+
+.trust-node-heading h3 {
+  font: 700 clamp(1rem, 2.3vw, 1.22rem) / 1.12 var(--nr-display-font);
+}
+
+.trust-node-heading h3,
+.trust-node-heading p,
+.trust-checks,
+.trust-node .crypto-status {
+  overflow-wrap: anywhere;
+}
+
+.trust-node-heading p,
+.trust-field,
+.trust-checks,
+.kms-operation p {
+  color: var(--nr-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.signature-inputs,
+.signature-results,
+.kms-archives {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.signature-inputs .trust-node {
+  grid-template-rows: auto 1fr auto;
+}
+
+.trust-data {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--nr-border);
+  padding: 0.45rem 0.55rem;
+  background: var(--nr-panel-end);
+  color: var(--nr-muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.trust-data[data-state="active"],
+.trust-data[data-state="blocked"] {
+  border-color: color-mix(in srgb, var(--trust-signal) 52%, var(--nr-border));
+}
+
+.trust-data > svg,
+.trust-checks svg,
+.tls-outcome svg,
+.tls-hop-key svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: none;
+  color: var(--trust-signal);
+}
+
+.trust-data code,
+.trust-data strong,
+.tls-hostnames code,
+.tls-plaintext code {
+  color: var(--trust-signal);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.signature-inputs .trust-data code {
+  min-width: 2ch;
+  margin-inline-start: auto;
+  font-size: 1.22rem;
+  text-align: end;
+  animation: trust-emphasis 380ms ease-out both;
+}
+
+.signature-create {
+  align-items: end;
+}
+
+.trust-field {
+  display: grid;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.trust-field select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--nr-border);
+  padding: 0.35rem 0.45rem;
+  background: var(--nr-panel-end);
+  color: var(--nr-text);
+  font-size: 0.88rem;
+}
+
+.trust-field select:focus-visible,
+.tls-hop:focus-visible {
+  outline: 2px solid var(--nr-cyan);
+  outline-offset: 2px;
+}
+
+.signature-join {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-items: center;
+  min-height: 1.45rem;
+  margin-block: -0.45rem;
+  color: var(--nr-cyan);
+}
+
+.signature-join::before {
+  position: absolute;
+  inset: 0 25% 48%;
+  border: 1px solid currentColor;
+  border-top: 0;
+  content: "";
+  opacity: 0.55;
+}
+
+.signature-join > svg {
+  position: relative;
+  width: 1.15rem;
+  height: 1.15rem;
+  align-self: end;
+}
+
+.signature-join[data-arrows="split"]::before {
+  inset-block: 34% 0;
+  border-block: 1px solid currentColor;
+  border-bottom: 0;
+}
+
+.trust-checks {
+  display: grid;
+  min-height: 2.5rem;
+  align-content: start;
+  gap: 0.28rem;
+}
+
+.trust-checks > span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.trust-check[data-state="blocked"],
+.trust-node[data-state="blocked"] .crypto-status {
+  color: var(--trust-signal);
+}
+
+.tls-topology {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr) minmax(0, 1.25fr)) minmax(0, 1fr);
+  align-items: center;
+}
+
+.tls-actor {
+  display: grid;
+  min-height: 4.35rem;
+  align-content: center;
+  justify-items: center;
+  gap: 0.32rem;
+  padding: 0.35rem 0.1rem;
+  font: 700 clamp(0.65rem, 2.7vw, 1.06rem) / 1.08 var(--nr-display-font);
+  text-align: center;
+}
+
+.tls-actor > svg {
+  width: clamp(1.15rem, 4vw, 1.75rem);
+  height: clamp(1.15rem, 4vw, 1.75rem);
+  color: var(--crypto-node-signal, var(--nr-muted));
+}
+
+.tls-hop {
+  display: grid;
+  min-height: 4.35rem;
+  min-width: 0;
+  grid-template-rows: 1.95rem 1fr;
+  align-content: center;
+  justify-items: center;
+  gap: 0.22rem;
+  padding-top: 0.5rem;
+  color: var(--nr-muted);
+  font: 700 clamp(0.62rem, 2.2vw, 0.88rem) / 1.05 var(--nr-display-font);
+  text-align: center;
+  cursor: pointer;
+}
+
+.tls-hop[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--trust-signal) 12%, transparent);
+  color: var(--trust-signal);
+}
+
+.tls-hop[data-state="blocked"] {
+  color: var(--trust-signal);
+}
+
+.tls-hop-key {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.tls-hop-key::before,
+.tls-hop-key::after {
+  flex: 1;
+  border-top: 1px solid var(--trust-signal);
+  content: "";
+  opacity: 0.55;
+}
+
+.tls-hop[data-state="blocked"] .tls-hop-key::before,
+.tls-hop[data-state="blocked"] .tls-hop-key::after {
+  border-top-style: dashed;
+}
+
+.tls-hop[aria-pressed="true"] .tls-hop-key::before,
+.tls-hop[aria-pressed="true"] .tls-hop-key::after {
+  opacity: 1;
+}
+
+.tls-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.38rem;
+}
+
+.tls-steps .nr-button {
+  justify-content: start;
+  gap: 0.4rem;
+  padding-inline: 0.45rem;
+  text-align: start;
+}
+
+.tls-steps .nr-button > span {
+  display: grid;
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid currentColor;
+  font-size: 0.75rem;
+}
+
+.tls-steps .nr-button > span > svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.tls-trace {
+  min-width: 0;
+  border: 1px solid var(--nr-border);
+  padding: 0.6rem 0.75rem;
+  background: var(--nr-panel);
+}
+
+.tls-trace-endpoints {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.55rem;
+  border-bottom: 1px solid var(--nr-border);
+  padding-bottom: 0.5rem;
+  color: var(--nr-text);
+  font: 700 clamp(0.85rem, 3.3vw, 1.05rem) / 1.2 var(--nr-display-font);
+}
+
+.tls-trace-endpoints > span:last-child {
+  text-align: end;
+}
+
+.tls-trace-endpoints small {
+  margin-inline: 0.18rem;
+  color: var(--nr-muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+}
+
+.tls-signals {
+  display: grid;
+  align-content: start;
+  min-height: 4.65rem;
+  gap: 0.4rem;
+  padding-top: 0.45rem;
+}
+
+.tls-signal {
+  position: relative;
+  display: grid;
+  min-height: 1.6rem;
+  align-items: center;
+  justify-items: center;
+  overflow: hidden;
+  color: var(--nr-cyan);
+}
+
+.tls-signal::before {
+  position: absolute;
+  inset-inline: 0.25rem;
+  top: 50%;
+  border-top: 1px solid currentColor;
+  content: "";
+  opacity: 0.42;
+}
+
+.tls-signal-marker,
+.tls-signal-direction {
+  position: absolute;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.tls-signal-marker {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  inset-inline-start: 0;
+  place-items: center;
+  border: 1px solid currentColor;
+  background: var(--nr-panel);
+  animation: trust-send 780ms ease-in-out both;
+}
+
+.tls-signal-marker > svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.tls-signal-direction {
+  inset-inline-end: 0;
+}
+
+.tls-signal[data-reverse="true"] .tls-signal-marker {
+  animation-name: trust-reply;
+  animation-delay: 280ms;
+}
+
+.tls-signal[data-reverse="true"] .tls-signal-direction {
+  inset-inline: 0 auto;
+}
+
+.tls-signal-label {
+  z-index: 1;
+  max-width: calc(100% - 3.3rem);
+  border: 1px solid color-mix(in srgb, var(--nr-cyan) 35%, transparent);
+  padding: 0.13rem 0.4rem;
+  background: var(--nr-panel-end);
+  font: 700 clamp(0.66rem, 2.5vw, 0.8rem) / 1.1 var(--nr-display-font);
+  text-align: center;
+}
+
+.tls-hostnames {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--nr-panel-end);
+}
+
+.tls-hostnames > div {
+  display: grid;
+  gap: 0.18rem;
+  border: 1px solid color-mix(in srgb, var(--trust-signal) 35%, var(--nr-border));
+  padding: 0.32rem 0.42rem;
+  color: var(--nr-muted);
+  font-size: 0.72rem;
+}
+
+.tls-hostnames > strong {
+  color: var(--trust-signal);
+}
+
+.tls-outcome,
+.tls-plaintext {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.45rem;
+  color: var(--trust-signal);
+  font-size: 0.8rem;
+}
+
+.tls-plaintext {
+  justify-content: end;
+  color: var(--nr-muted);
+}
+
+.tls-controls,
+.kms-recovery-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.kms-vault {
+  width: min(100%, 34rem);
+  justify-self: center;
+}
+
+.kms-versions,
+.kms-archive-values {
+  display: grid;
+  width: 100%;
+  gap: 0.4rem;
+}
+
+.kms-versions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.kms-versions .trust-data {
+  flex-wrap: wrap;
+}
+
+.kms-archive-values .trust-data > span + code {
+  margin-inline-start: auto;
+}
+
+.kms-operation {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.kms-operation > p:empty {
+  display: none;
+}
+
+.kms-recovery {
+  display: grid;
+  gap: 0.55rem;
+  border: 1px solid var(--nr-border);
+  padding: 0.65rem;
+  background: var(--nr-panel-end);
+}
+
+.kms-path {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  list-style: none;
+}
+
+.kms-path > li {
+  position: relative;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 3.75rem;
+  padding: 0.45rem;
+}
+
+.kms-path > li + li::before {
+  position: absolute;
+  top: 50%;
+  right: 100%;
+  width: 0.6rem;
+  border-top: 1px dashed var(--nr-muted);
+  content: "";
+}
+
+.kms-path > li[data-state="success"]::before,
+.kms-path > li[data-state="blocked"]::before {
+  border-top-style: solid;
+  border-top-color: var(--trust-signal);
+}
+
+.kms-path strong,
+.kms-path span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.kms-path strong {
+  font: 700 0.9rem / 1.12 var(--nr-display-font);
+}
+
+.kms-path span {
+  margin-top: 0.18rem;
+  color: var(--nr-muted);
+  font-size: 0.73rem;
+  line-height: 1.25;
+}
+
+.kms-recovery .crypto-legend {
+  min-height: 0;
+  margin-top: 0.45rem;
+  color: var(--trust-signal);
+}
+
+@keyframes trust-send {
+  from {
+    inset-inline-start: 0;
+  }
+  to {
+    inset-inline-start: calc(100% - 2.55rem);
+  }
+}
+
+@keyframes trust-reply {
+  from {
+    inset-inline-start: calc(100% - 1.25rem);
+  }
+  to {
+    inset-inline-start: 1.3rem;
+  }
+}
+
+@keyframes trust-emphasis {
+  from {
+    opacity: 0.48;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 42rem) {
+  .tls-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kms-path > li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 30rem) {
+  .trust-node {
+    padding: 0.55rem;
+  }
+
+  .signature-inputs,
+  .signature-results,
+  .kms-archives {
+    gap: 0.35rem;
+  }
+
+  .trust-node-heading {
+    align-items: start;
+    gap: 0.35rem;
+  }
+
+  .trust-node-heading > svg {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+
+  .trust-data {
+    flex-wrap: wrap;
+  }
+
+  .tls-controls > .crypto-controls {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tls-controls .crypto-label {
+    grid-column: 1 / -1;
+  }
+
+  .signature-inputs .trust-data code {
+    margin-inline-start: 0;
+  }
+
+  .kms-archive-values .trust-data > span + code {
+    margin-inline-start: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tls-signal-marker,
+  .tls-signal[data-reverse="true"] .tls-signal-marker,
+  .signature-inputs .trust-data code {
+    animation: none;
+  }
+
+  .tls-signal[data-reverse="true"] .tls-signal-marker {
+    inset-inline: auto 0;
+  }
+}
