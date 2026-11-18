@@ -1,10 +1,11 @@
-import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useLocation, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { BookOpen, GraduationCap, LogOut, Menu, Users, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { canAccessAuthenticatedPath } from "@/lib/access";
 import { Button } from "@/components/ui/button";
-import { HudPanel } from "@/design-system/nightrunner";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -15,33 +16,35 @@ export const Route = createFileRoute("/_authenticated")({
   component: Layout,
 });
 
-const nav = [
+const adminNav = [
   { to: "/classi", label: "Classi", icon: GraduationCap },
   { to: "/studenti", label: "Studenti", icon: Users },
   { to: "/corsi", label: "Corsi", icon: BookOpen },
 ] as const;
 
+const studentNav = [{ to: "/area-studente", label: "I miei corsi", icon: BookOpen }] as const;
+
 function Layout() {
   const { user, isAdmin, rolesLoaded } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
+  const isStudent = rolesLoaded && !isAdmin;
+  const pathAllowed = canAccessAuthenticatedPath(location.pathname, isAdmin);
+  const nav = isStudent ? studentNav : adminNav;
+
+  useEffect(() => {
+    if (isStudent && !pathAllowed) {
+      navigate({ to: "/area-studente", replace: true });
+    }
+  }, [isStudent, pathAllowed, navigate]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
-    navigate({ to: "/auth", search: { next: "/classi" } });
+    queryClient.clear();
+    navigate({ to: "/auth", search: { next: isAdmin ? "/classi" : "/area-studente" } });
   };
-
-  if (rolesLoaded && !isAdmin) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-6">
-        <HudPanel className="w-full max-w-md space-y-4" heading="Accesso riservato">
-          <p className="text-sm text-muted-foreground">
-            Il pannello è riservato agli amministratori. L'account {user?.email} non ha questo ruolo.
-          </p>
-          <Button variant="outline" onClick={signOut}><LogOut /> Esci</Button>
-        </HudPanel>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen min-w-0 flex-col md:flex-row">
@@ -69,7 +72,7 @@ function Layout() {
           </nav>
           <div className="mt-4 space-y-2 border-t border-sidebar-border pt-4 text-xs md:mt-0">
             <div className="truncate">{user?.email}</div>
-            <div className="font-mono uppercase text-sidebar-primary">Admin</div>
+            <div className="font-mono uppercase text-sidebar-primary">{rolesLoaded ? (isAdmin ? "Admin" : "Studente") : "…"}</div>
             <Button size="sm" variant="ghost" className="w-full justify-start px-2" onClick={signOut}>
               <LogOut className="h-4 w-4" /> Esci
             </Button>
@@ -77,7 +80,7 @@ function Layout() {
         </div>
       </aside>
       <main className="min-w-0 flex-1 px-4 pb-8 pt-5 sm:px-6 lg:p-8">
-        {rolesLoaded ? <Outlet /> : <p className="text-muted-foreground">Caricamento…</p>}
+        {!rolesLoaded || (isStudent && !pathAllowed) ? <p className="text-muted-foreground">Caricamento…</p> : <Outlet />}
       </main>
     </div>
   );

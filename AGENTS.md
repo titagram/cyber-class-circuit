@@ -32,3 +32,4 @@ use the editor.
 - UI reuses the Nightrunner design system copied from Agent Time Weaver (src/design-system, src/styles, src/components/ui); keep new screens on these parts so the look stays shared.
 - Admin access = row in public.user_roles with role 'admin'; the first account created gets it via trigger, and every data table is admin-only via has_role RLS.
 - Course/chapter structure is intentionally loose (jsonb metadata/content); courses are authored outside the UI, the panel only lists and links them to classes.
+- Student auth accounts link to `public.students.user_id` (plain UUID); student RLS exposes only courses/chapters assigned through their classes, so management data stays admin-only.

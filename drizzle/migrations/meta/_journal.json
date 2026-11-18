@@ -15,6 +15,13 @@
       "when": 1795017844089,
       "tag": "0001_add_first_cybersecurity_lesson",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795023782152,
+      "tag": "0002_add_student_course_access",
+      "breakpoints": true
     }
   ]
 }

@@ -5,3 +5,10 @@
 - [x] Registrare la slide e pubblicare il capitolo 1.2 nel corso esistente.
 - [x] Aggiungere ed eseguire i test sulle regole didattiche.
 - [x] Verificare il flusso completo su desktop e telefono.
+
+# Accesso studente
+
+- [x] Collegare test@test.it alla scheda studente esistente e al ruolo studente.
+- [x] Consentire la lettura dei soli corsi e capitoli assegnati alla sua classe.
+- [x] Creare l’area studente e adattare navigazione e ritorno dai capitoli.
+- [x] Verificare accesso studente, restrizioni e navigazione su desktop e telefono.

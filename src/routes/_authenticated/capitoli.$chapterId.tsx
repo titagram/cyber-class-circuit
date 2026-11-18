@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { EmptyState } from "@/components/PageHeader";
 import { getLessonKey, lessonRegistry } from "@/components/lessons/registry";
 
@@ -27,8 +28,9 @@ export const Route = createFileRoute("/_authenticated/capitoli/$chapterId")({
 
 function ChapterPage() {
   const { chapterId } = Route.useParams();
+  const { user, isAdmin } = useAuth();
   const { data: chapter, isLoading } = useQuery({
-    queryKey: ["chapter", chapterId],
+    queryKey: ["chapter", user?.id, chapterId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("chapters")
@@ -58,7 +60,7 @@ function ChapterPage() {
   return (
     <div>
       <Link
-        to="/corsi"
+        to={isAdmin ? "/corsi" : "/area-studente"}
         className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
       >
         <ArrowLeft className="h-4 w-4" />
