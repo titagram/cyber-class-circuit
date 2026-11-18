@@ -81,7 +81,10 @@ export function DataFlowExplorer({
   const activeEvent = mode === "simulate" ? config.events[eventIndex] : undefined;
   const activeNodes = new Set(activeEvent?.nodes ?? highlight?.nodes ?? []);
   const secondaryNodes = new Set(highlight?.secondaryNodes ?? []);
-  const activeConnections = new Set(activeEvent?.connections ?? highlight?.connections ?? []);
+  const transfers = new Map(
+    activeEvent?.transfers.map(({ connection, direction }) => [connection, direction]),
+  );
+  const activeConnections = new Set(activeEvent ? transfers.keys() : highlight?.connections);
   const activeBoundaries = new Set(highlight?.boundaries ?? []);
   const selectedNode = visibleNodes.find((node) => node.id === selectedNodeId);
 
@@ -126,6 +129,7 @@ export function DataFlowExplorer({
           role="region"
           aria-label={`${config.label}. Scorri orizzontalmente per esplorare la mappa su schermi piccoli.`}
           data-testid="data-flow-map"
+          data-playing={mode === "simulate" && isPlaying}
         >
           <div className="df-map">
             <svg
@@ -154,9 +158,18 @@ export function DataFlowExplorer({
                   </g>
                 ))}
               {visibleConnections.map((connection) => {
-                const from = config.nodes.find((node) => node.id === connection.from)!;
-                const to = config.nodes.find((node) => node.id === connection.to)!;
+                const direction = transfers.get(connection.id);
+                const reverse = direction === "reverse";
+                const from = config.nodes.find(
+                  (node) => node.id === (reverse ? connection.to : connection.from),
+                )!;
+                const to = config.nodes.find(
+                  (node) => node.id === (reverse ? connection.from : connection.to),
+                )!;
                 const active = activeConnections.has(connection.id);
+                const midpointX = (from.x + to.x) / 2;
+                const midpointY = (from.y + to.y) / 2;
+                const angle = Math.atan2(to.y - from.y, to.x - from.x) * (180 / Math.PI);
                 return (
                   <g key={connection.id}>
                     <line
@@ -167,12 +180,16 @@ export function DataFlowExplorer({
                       className={`df-connection${active ? " df-connection-active" : ""}`}
                       data-testid={`data-flow-connection-${connection.id}`}
                       data-highlighted={active ? "true" : "false"}
+                      data-direction={direction}
                     />
-                    <text
-                      x={(from.x + to.x) / 2}
-                      y={(from.y + to.y) / 2 - 10}
-                      className="df-connection-label"
-                    >
+                    {direction && (
+                      <path
+                        d="M -4 -5 L 2 0 L -4 5"
+                        transform={`translate(${midpointX} ${midpointY}) rotate(${angle})`}
+                        className="df-transfer-arrow"
+                      />
+                    )}
+                    <text x={midpointX} y={midpointY - 10} className="df-connection-label">
                       {connection.label}
                     </text>
                   </g>
@@ -205,11 +222,22 @@ export function DataFlowExplorer({
           </div>
         </div>
         <div className="df-map-footer">
-          <span className="df-map-instruction">Seleziona un componente per ispezionarlo senza interrompere la simulazione.</span>
+          <span className="df-map-instruction">Seleziona un componente per ispezionarlo.</span>
           <span className="df-scroll-hint">Scorri la mappa per vedere tutti i componenti →</span>
           <div className="df-map-legend" aria-label="Legenda della mappa">
-            <span><i className="df-legend-mark df-legend-active" /> Evidenziato</span>
-            <span><i className="df-legend-mark df-legend-secondary" /> Conservazione o possibile copia</span>
+            <span>
+              <i className="df-legend-mark df-legend-active" /> Evidenziato
+            </span>
+            {secondaryNodes.size > 0 && (
+              <span>
+                <i className="df-legend-mark df-legend-secondary" /> Conservazione o possibile copia
+              </span>
+            )}
+            {showTrustBoundaries && (
+              <span>
+                <i className="df-legend-boundary" /> Confine di fiducia
+              </span>
+            )}
           </div>
         </div>
       </div>

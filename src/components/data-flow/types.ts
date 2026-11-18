@@ -46,7 +46,7 @@ export type DataFlowEvent = {
   title: string;
   description: string;
   nodes: readonly string[];
-  connections: readonly string[];
+  transfers: readonly { connection: string; direction: "forward" | "reverse" }[];
   payloadLabel: string;
   payload: string;
 };

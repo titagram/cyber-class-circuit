@@ -126,7 +126,9 @@ export function Cybersecurity13Slide() {
           <p className="lesson-scenario">
             L'utente apre il contratto 42. Avvia la sequenza, mettila in pausa oppure scegli direttamente un evento: richiesta e risposta sono simulate localmente.
           </p>
-          <DataFlowExplorer config={architecture} level={2} mode="simulate" />
+          {moment === "richiesta" && (
+            <DataFlowExplorer config={architecture} level={2} mode="simulate" />
+          )}
           <MomentActions moment="richiesta" onChange={setMoment} />
         </HudPanel>
       </HudTabPanel>

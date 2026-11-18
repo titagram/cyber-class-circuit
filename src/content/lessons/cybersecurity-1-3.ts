@@ -65,6 +65,12 @@ export const levels: readonly {
   },
 ];
 
+export const documentRequest =
+  "GET /api/documents/42 HTTP/1.1\nHost: gestionale.example\nCookie: session=demo-session-id";
+
+export const documentResponse =
+  "HTTP/1.1 200 OK\nCache-Control: no-store\nContent-Type: application/pdf\nContent-Disposition: inline; filename=contratto-42.pdf\n\n[contenuto simulato del documento]";
+
 export const architecture: DataFlowConfig = {
   id: "saas-document-architecture-1-3",
   label: "Mappa dell'architettura del gestionale SaaS",
@@ -90,7 +96,11 @@ export const architecture: DataFlowConfig = {
       x: 280,
       y: 250,
       description: "Il reverse proxy, o web server, è il punto di ingresso delle richieste verso i servizi applicativi.",
-      responsibilities: ["Riceve le richieste dal browser", "Termina HTTPS nello scenario", "Inoltra il traffico al backend"],
+      responsibilities: [
+        "Riceve le richieste dal browser",
+        "Termina TLS quando il collegamento dal browser usa HTTPS",
+        "Inoltra il traffico al backend",
+      ],
       dataRole: "transmit",
     },
     {
@@ -220,25 +230,28 @@ export const architecture: DataFlowConfig = {
       title: "Browser · genera la richiesta",
       description: "L'utente seleziona «Visualizza documento». Il browser prepara la richiesta HTTP per il contratto 42.",
       nodes: ["browser"],
-      connections: [],
+      transfers: [],
       payloadLabel: "Richiesta HTTP simulata",
-      payload: "GET /api/documents/42 HTTP/1.1\nHost: gestionale.example\nCookie: session=demo-session-id",
+      payload: documentRequest,
     },
     {
       id: "proxy-forward",
       title: "Reverse proxy · riceve e inoltra",
       description: "Il reverse proxy riceve la richiesta HTTPS, termina TLS nello scenario e la inoltra al backend.",
       nodes: ["proxy"],
-      connections: ["browser-proxy", "proxy-backend"],
+      transfers: [
+        { connection: "browser-proxy", direction: "forward" },
+        { connection: "proxy-backend", direction: "forward" },
+      ],
       payloadLabel: "Richiesta inoltrata",
       payload: "GET /api/documents/42\nCookie: session=demo-session-id\n→ destinazione: backend",
     },
     {
       id: "backend-authorize",
       title: "Backend · identifica e autorizza",
-      description: "Il backend associa la sessione a un utente e verifica che il suo tenant possa accedere al documento 42.",
+      description: "Il backend associa la sessione a un utente e verifica che l’utente sia autorizzato ad accedere al documento 42 nel suo tenant prima di recuperare il file.",
       nodes: ["backend"],
-      connections: ["proxy-backend"],
+      transfers: [],
       payloadLabel: "Verifica applicativa simulata",
       payload: "session=demo-session-id → utente demo\ntenant: Azienda Alfa S.r.l.\ndocumento 42: accesso autorizzato",
     },
@@ -247,7 +260,7 @@ export const architecture: DataFlowConfig = {
       title: "Database · restituisce i metadati",
       description: "Il backend interroga il database e recupera classificazione, tenant e riferimento al file nello storage.",
       nodes: ["backend", "database"],
-      connections: ["backend-database"],
+      transfers: [{ connection: "backend-database", direction: "reverse" }],
       payloadLabel: "Metadati del documento",
       payload: "id: 42\ntenant: Azienda Alfa S.r.l.\ntitolo: Contratto di fornitura\nclassificazione: Riservato\nfile: tenant-alfa/contracts/42.pdf",
     },
@@ -256,7 +269,7 @@ export const architecture: DataFlowConfig = {
       title: "Object storage · restituisce il file",
       description: "Con il riferimento ottenuto dal database, il backend recupera il contenuto del documento dall'object storage.",
       nodes: ["backend", "storage"],
-      connections: ["backend-storage"],
+      transfers: [{ connection: "backend-storage", direction: "reverse" }],
       payloadLabel: "Contenuto recuperato",
       payload: "tenant-alfa/contracts/42.pdf\n→ contenuto del contratto disponibile nella memoria del backend",
     },
@@ -265,16 +278,19 @@ export const architecture: DataFlowConfig = {
       title: "Risposta · torna verso il browser",
       description: "Il backend costruisce la risposta. Il documento attraversa di nuovo il reverse proxy diretto al browser.",
       nodes: ["backend", "proxy", "browser"],
-      connections: ["backend-storage", "proxy-backend", "browser-proxy"],
+      transfers: [
+        { connection: "proxy-backend", direction: "reverse" },
+        { connection: "browser-proxy", direction: "reverse" },
+      ],
       payloadLabel: "Risposta HTTP simulata",
-      payload: "HTTP/1.1 200 OK\nContent-Type: application/pdf\nContent-Disposition: inline; filename=contratto-42.pdf\n\n[contenuto simulato del documento]",
+      payload: documentResponse,
     },
     {
       id: "browser-render",
       title: "Browser · visualizza il documento",
       description: "Il browser riceve i dati e carica il contratto per la visualizzazione. Ora il contenuto è anche in uso sul dispositivo.",
       nodes: ["browser"],
-      connections: ["browser-proxy"],
+      transfers: [],
       payloadLabel: "Documento visualizzato",
       payload: "Contratto di fornitura — ID 42\nCliente: Azienda Alfa S.r.l.\nFornitore: Azienda Beta S.p.A.\nImporto: € 125.000\nClassificazione: Riservato",
     },

@@ -70,6 +70,26 @@ describe("Slide 1.3", () => {
     expect(within(panel).getByRole("heading", { name: "Reverse proxy · riceve e inoltra" })).toBeVisible();
   });
 
+  it("mostra il ritorno verso il browser e ferma il flusso visivo in pausa", () => {
+    openMoment("4 · La richiesta");
+    const panel = screen.getByRole("tabpanel", { name: "4 · La richiesta" });
+    fireEvent.click(within(panel).getByRole("button", { name: "Avvia" }));
+    expect(within(panel).getByTestId("data-flow-map")).toHaveAttribute("data-playing", "true");
+
+    fireEvent.click(within(panel).getByRole("button", { name: "Pausa" }));
+    expect(within(panel).getByTestId("data-flow-map")).toHaveAttribute("data-playing", "false");
+
+    fireEvent.click(within(panel).getByRole("button", { name: /Risposta · torna verso il browser/ }));
+    expect(within(panel).getByTestId("data-flow-connection-browser-proxy")).toHaveAttribute(
+      "data-direction",
+      "reverse",
+    );
+    expect(within(panel).getByTestId("data-flow-connection-backend-storage")).toHaveAttribute(
+      "data-highlighted",
+      "false",
+    );
+  });
+
   it("distingue transito, riposo e uso senza rendere persistente la memoria", () => {
     openMoment("5 · Gli stati del dato");
     const panel = screen.getByRole("tabpanel", { name: "5 · Gli stati del dato" });
