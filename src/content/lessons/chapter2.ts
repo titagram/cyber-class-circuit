@@ -6,6 +6,16 @@ type CryptoLesson = {
 };
 
 export const chapter2 = {
+  "cybersecurity-2-0": {
+    title: "2.0 — Dai caratteri ai byte",
+    question: "Che cosa legge davvero un algoritmo quando gli passiamo un testo?",
+    takeaway:
+      "UTF-8 traduce il testo in byte. Hex e Base64 rappresentano quegli stessi byte e si possono decodificare. XOR opera sui bit e si annulla quando applichi due volte la stessa maschera.",
+    reference: {
+      label: "CryptoHack · Introduzione a codifiche e XOR",
+      href: "https://cryptohack.org/courses/intro/course_details/",
+    },
+  },
   "cybersecurity-2-1": {
     title: "2.1 — Cifratura autenticata",
     question: "Come fa il server a capire se può aprire il contratto cifrato?",

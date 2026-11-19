@@ -11,8 +11,9 @@ describe("Capitolo 2 nel catalogo del corso", () => {
 
   it("accoda tutte le lezioni al solo corso Cybersecurity e risolve ciascun link", () => {
     const chapters = getCourseChapters(cybersecurityCourseId, [storedChapter]);
-    expect(chapters.map((chapter) => chapter.position)).toEqual([1, 6, 7, 8, 9, 10, 11]);
+    expect(chapters.map((chapter) => chapter.position)).toEqual([1, 6, 7, 8, 9, 10, 11, 12]);
     expect(chapters[0]).toBe(storedChapter);
+    expect(chapters[1]?.id).toBe("cybersecurity-2-0");
     for (const chapter of chapters.slice(1)) {
       expect(getSourceChapter(chapter.id)).toEqual({
         ...chapter,
@@ -30,7 +31,8 @@ describe("Capitolo 2 nel catalogo del corso", () => {
       content: { lesson: "cybersecurity-2-1" },
     };
     const chapters = getCourseChapters(cybersecurityCourseId, [chapter]);
-    expect(chapters).toHaveLength(6);
-    expect(chapters[0]).toBe(chapter);
+    expect(chapters).toHaveLength(7);
+    expect(chapters[0]?.id).toBe("cybersecurity-2-0");
+    expect(chapters[1]).toBe(chapter);
   });
 });

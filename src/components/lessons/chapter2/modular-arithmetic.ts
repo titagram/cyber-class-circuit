@@ -24,6 +24,21 @@ export function gcd(a: number, b: number) {
   return euclideanDivisions(a, b).at(-1)?.divisor ?? a;
 }
 
+export function extendedEuclid(a: number, b: number) {
+  const divisions = euclideanDivisions(a, b);
+  let previous = { first: 1, second: 0 };
+  let current = { first: 0, second: 1 };
+  const trace = divisions.map((division) => {
+    const next = {
+      first: previous.first - division.quotient * current.first,
+      second: previous.second - division.quotient * current.second,
+    };
+    [previous, current] = [current, next];
+    return { ...division, ...next };
+  });
+  return { ...previous, divisor: divisions.at(-1)?.divisor ?? a, trace };
+}
+
 export function modularPower(base: number, exponent: number, modulus: number) {
   const initial = { power: 0, previous: 1, residue: 1 };
   const trace = [initial];

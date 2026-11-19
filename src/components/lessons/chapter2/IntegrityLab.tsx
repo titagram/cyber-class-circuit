@@ -11,12 +11,47 @@ type Method = "sha256" | "hmac";
 
 const original = integrityCases[0];
 const bitsPerByte = [128, 64, 32, 16, 8, 4, 2, 1];
+const utf8 = new TextEncoder();
+const shaBlockBytes = 64;
+const shaLengthBytes = 8;
+
+function byteHex(value: number) {
+  return value.toString(16).padStart(2, "0");
+}
+
+function byteBits(value: number) {
+  return value.toString(2).padStart(8, "0");
+}
+
+function moveGridByte(
+  event: KeyboardEvent<HTMLButtonElement>,
+  index: number,
+  length: number,
+  select: (index: number) => void,
+) {
+  const grid = event.currentTarget.parentElement;
+  if (!grid) return;
+  const columns = Number(getComputedStyle(grid).getPropertyValue("--integrity-columns")) || 8;
+  const positions: Record<string, number> = {
+    ArrowLeft: index - 1,
+    ArrowRight: index + 1,
+    ArrowUp: index - columns,
+    ArrowDown: index + columns,
+    Home: 0,
+    End: length - 1,
+  };
+  if (!Object.hasOwn(positions, event.key)) return;
+  event.preventDefault();
+  const next = Math.max(0, Math.min(length - 1, positions[event.key]!));
+  select(next);
+  (grid.children.item(next) as HTMLButtonElement | null)?.focus();
+}
 
 const receiveStep: TutorialStep = {
   label: "Copia ricevuta",
   title: "Scegli quale copia arriva al server",
   explanation:
-    "Confronta il testo ricevuto con quello originale. Prova a sostituire una sola cifra dell’importo e osserva fin dove si propagherà la differenza.",
+    "Scegli «Cambia importo» per sostituire una sola cifra. Prima di ricalcolare SHA-256, controlla in quale posizione cambiano i byte e quanti bit di ingresso differiscono.",
 };
 
 const shaSteps = [
@@ -24,20 +59,20 @@ const shaSteps = [
     label: "Originale",
     title: "Che cosa deve arrivare intatto?",
     explanation:
-      "Il server ha già accesso alla versione approvata del contratto 42. In seguito ne riceverà una copia. Per verificare che i dati siano ancora gli stessi, gli serve un riferimento ricavato dai byte della versione approvata.",
+      "Il server ha già accesso alla versione approvata del contratto 42. Quando riceverà una copia, dovrà controllare se contiene gli stessi byte. Seleziona una casella per vedere come un carattere di questo testo è rappresentato in UTF-8.",
   },
   {
     label: "Riferimento",
     title: "Ricava l’impronta dall’originale",
     explanation:
-      "SHA-256 è una funzione di hash. Aggiunge bit di riempimento per formare blocchi da 512 bit. Qui ne basta uno. L’algoritmo mescola i dati di ogni blocco in uno stato interno e restituisce un’impronta di 256 bit. Il server la conserva in un archivio attendibile.",
+      "Una funzione di hash ricava un’impronta dai byte di ingresso. SHA-256 aggiunge un indicatore, degli zeri e la lunghezza del messaggio per formare blocchi da 512 bit. Dopo il mescolamento, il server conserva l’impronta di 256 bit in un archivio attendibile.",
   },
   receiveStep,
   {
     label: "Ricalcolo",
     title: "Calcola l’impronta sui byte arrivati",
     explanation:
-      "Il server applica lo stesso SHA-256 ai byte del testo ricevuto, compresi i numeri, le lettere e i separatori. Il risultato è l’impronta della copia. Ora puoi confrontarla con quella salvata.",
+      "Il server applica gli stessi passaggi ai byte ricevuti. Le eventuali caselle evidenziate indicano i byte del testo che differiscono dall’originale. Ora confronta l’impronta in uscita con quella conservata.",
   },
   {
     label: "Confronto",
@@ -58,7 +93,7 @@ const hmacSteps = [
     label: "Tag del mittente",
     title: "Il mittente genera un tag per il contratto",
     explanation:
-      "HMAC-SHA-256 applica SHA-256 due volte. La prima usa il testo e la chiave combinata con una sequenza fissa di byte. La seconda usa il primo risultato e la stessa chiave combinata con una sequenza diversa. Ottiene così il tag, un codice di autenticazione di 256 bit che il mittente allega al contratto.",
+      "HMAC-SHA-256 applica SHA-256 due volte. Prepara la stessa chiave in due modi, combinandola con due sequenze fisse di byte diverse. Il risultato del primo passaggio entra nel secondo, che produce il tag da allegare al contratto.",
   },
   {
     ...receiveStep,
@@ -122,7 +157,7 @@ export function IntegrityLab() {
         {step === 0 ? (
           <div className="crypto-integrity-stage">
             <IntegrityMessage label="Originale" sample={original} />
-            <MessageBytes message={original.message} />
+            <InputBytes message={original.message} />
             <p className="crypto-integrity-note">
               Un bit vale 0 oppure 1. Un byte raggruppa 8 bit. La codifica UTF-8 usa un byte per
               ciascun carattere di questo testo, compresi i separatori <code>&amp;</code> e{" "}
@@ -161,7 +196,13 @@ export function IntegrityLab() {
               <IntegrityMessage label="Originale" sample={original} />
               {sample ? <IntegrityMessage label="Ricevuto" sample={sample} /> : null}
               {sample ? <p className="crypto-integrity-note">{sample.explanation}</p> : null}
+              {sample ? <InputByteChange sample={sample} /> : null}
             </div>
+            {useMac ? (
+              <dl className="crypto-integrity-values">
+                <IntegrityValue label="Tag del mittente allegato" value={original.hmac} />
+              </dl>
+            ) : null}
           </div>
         ) : null}
 
@@ -180,19 +221,133 @@ export function IntegrityLab() {
   );
 }
 
-function MessageBytes({ message }: { message: string }) {
-  const bytes = new TextEncoder().encode(message);
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join(" ");
+function InputBytes({ message }: { message: string }) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const inspectorId = useId();
+  const bytes = utf8.encode(message);
+  const selected = bytes[selectedIndex]!;
 
   return (
-    <dl className="crypto-integrity-values">
-      <div>
-        <dt className="crypto-label">{bytes.length} byte UTF-8 in esadecimale</dt>
-        <dd className="crypto-readout">
-          <code>{hex}</code>
-        </dd>
+    <div className="crypto-integrity-workbench">
+      <div className="crypto-stage-label">{bytes.length} byte UTF-8</div>
+      <div className="crypto-input-byte-grid" role="group" aria-label="Byte del contratto in UTF-8">
+        {Array.from(bytes, (byte, index) => (
+          <button
+            key={index}
+            type="button"
+            className="crypto-integrity-byte crypto-input-byte"
+            tabIndex={selectedIndex === index ? 0 : -1}
+            aria-label={`Posizione ${index + 1}, carattere ${message[index]}, esadecimale ${byteHex(byte)}`}
+            aria-pressed={selectedIndex === index}
+            aria-controls={inspectorId}
+            onClick={() => setSelectedIndex(index)}
+            onKeyDown={(event) => moveGridByte(event, index, bytes.length, setSelectedIndex)}
+          >
+            <span aria-hidden="true">{message[index]}</span>
+            <code aria-hidden="true">{byteHex(byte)}</code>
+          </button>
+        ))}
       </div>
-    </dl>
+      <dl
+        id={inspectorId}
+        className="crypto-input-byte-inspector"
+        aria-label="Byte UTF-8 selezionato"
+        aria-live="polite"
+      >
+        <div>
+          <dt>Posizione</dt>
+          <dd>{selectedIndex + 1}</dd>
+        </div>
+        <div>
+          <dt>Carattere</dt>
+          <dd>
+            <code>{message[selectedIndex]}</code>
+          </dd>
+        </div>
+        <div>
+          <dt>Esadecimale</dt>
+          <dd>
+            <code>0x{byteHex(selected)}</code>
+          </dd>
+        </div>
+        <div>
+          <dt>Binario</dt>
+          <dd>
+            <code>{byteBits(selected)}</code>
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
+function InputByteChange({ sample }: { sample: IntegrityCase }) {
+  const before = utf8.encode(original.message);
+  const after = utf8.encode(sample.message);
+  const index = before.findIndex((byte, position) => byte !== after[position]);
+  if (index < 0) return null;
+
+  const oldByte = before[index]!;
+  const newByte = after[index]!;
+  const xor = oldByte ^ newByte;
+  const changed = bitsPerByte.filter((mask) => xor & mask).length;
+  return (
+    <div className="crypto-integrity-workbench" role="group" aria-label="Primo byte diverso">
+      <div className="crypto-integrity-byte-header">
+        <h3 className="crypto-stage-label">Byte {index + 1}</h3>
+        <span>
+          {changed} {changed === 1 ? "bit diverso" : "bit diversi"}
+        </span>
+      </div>
+      <div className="crypto-input-change">
+        <InputByteValue
+          label="Originale"
+          byte={oldByte}
+          character={original.message[index]!}
+          xor={xor}
+        />
+        <ArrowRight className="crypto-integrity-arrow" aria-hidden="true" />
+        <InputByteValue
+          label="Ricevuto"
+          byte={newByte}
+          character={sample.message[index]!}
+          xor={xor}
+        />
+      </div>
+      {before.length !== after.length ? (
+        <p className="crypto-integrity-note">
+          La copia è lunga {after.length} byte. L’originale ne misura {before.length}.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function InputByteValue({
+  label,
+  byte,
+  character,
+  xor,
+}: {
+  label: string;
+  byte: number;
+  character: string;
+  xor: number;
+}) {
+  return (
+    <div className="crypto-input-change-value">
+      <span className="crypto-label">{label}</span>
+      <code>
+        {character} · 0x{byteHex(byte)}
+      </code>
+      <code className="crypto-input-change-bits" aria-label={`Binario ${byteBits(byte)}`}>
+        {bitsPerByte.map((mask) => (
+          <span key={mask} data-changed={Boolean(xor & mask)}>
+            {byte & mask ? "1" : "0"}
+          </span>
+        ))}
+      </code>
+    </div>
   );
 }
 
@@ -207,31 +362,103 @@ function IntegrityCalculation({
   messageLabel: string;
   resultLabel: string;
 }) {
-  const useMac = method === "hmac";
-  const MethodIcon = useMac ? KeyRound : Fingerprint;
-
   return (
     <div className="crypto-integrity-stage">
       <IntegrityMessage label={messageLabel} sample={sample} />
-      <MessageBytes message={sample.message} />
-      <div className="crypto-integrity-operation">
-        <div className="crypto-node crypto-integrity-method">
-          <MethodIcon aria-hidden="true" />
-          <div>
-            <strong>{useMac ? "HMAC-SHA-256" : "SHA-256"}</strong>
-            <span>
-              {useMac
-                ? "Testo e chiave, due passaggi di hash"
-                : "Byte del testo → blocco da 512 bit → 256 bit"}
-            </span>
-          </div>
-        </div>
-        <ArrowRight className="crypto-integrity-arrow" aria-hidden="true" />
-        <dl className="crypto-integrity-values">
-          <IntegrityValue label={resultLabel} value={sample[method]} />
-        </dl>
-      </div>
+      {method === "hmac" ? <HmacPasses /> : <ShaBlock sample={sample} />}
+      <dl className="crypto-integrity-values">
+        <IntegrityValue label={resultLabel} value={sample[method]} />
+      </dl>
     </div>
+  );
+}
+
+function ShaBlock({ sample }: { sample: IntegrityCase }) {
+  const bytes = utf8.encode(sample.message);
+  const source = utf8.encode(original.message);
+  // Each lesson message fits in one block with its padding and 64-bit length field.
+  const block = new Uint8Array(shaBlockBytes);
+  const lengthStart = block.length - shaLengthBytes;
+  const bitLength = bytes.length * 8;
+  block.set(bytes);
+  block[bytes.length] = 0x80;
+  new DataView(block.buffer).setBigUint64(lengthStart, BigInt(bitLength));
+  const lengthHex = Array.from(block.subarray(lengthStart), byteHex).join(" ");
+
+  return (
+    <section className="crypto-integrity-workbench" aria-label="Blocco SHA-256 da 512 bit">
+      <h3 className="crypto-stage-label">Blocco SHA-256 da 512 bit</h3>
+      <div className="crypto-sha-block" aria-hidden="true">
+        {Array.from(block, (byte, index) => {
+          const kind =
+            index < bytes.length ? "message" : index < lengthStart ? "padding" : "length";
+          return (
+            <code
+              key={index}
+              data-sha-byte-kind={kind}
+              data-changed={kind === "message" && byte !== source[index]}
+            >
+              {byteHex(byte)}
+            </code>
+          );
+        })}
+      </div>
+      <ul className="crypto-sha-legend" aria-label="Parti del blocco">
+        <li data-sha-part="message">
+          <span />
+          {bytes.length} byte del messaggio
+        </li>
+        <li data-sha-part="padding">
+          <span />
+          Indicatore <code>80</code> e {lengthStart - bytes.length - 1} byte a zero
+        </li>
+        <li data-sha-part="length">
+          <span />
+          Lunghezza di {bitLength} bit <code>{lengthHex}</code>
+        </li>
+        {sample.id !== "original" ? (
+          <li data-sha-part="changed">
+            <span />
+            Byte diversi dall’originale
+          </li>
+        ) : null}
+      </ul>
+      <div className="crypto-sha-mixing">
+        <Fingerprint aria-hidden="true" />
+        <div>
+          <strong>64 passaggi di mescolamento</strong>
+          <p className="crypto-integrity-note">
+            Il blocco dà origine a 64 valori da 32 bit, uno per passaggio. Rotazioni, somme e
+            operazioni sui bit mescolano gli otto gruppi di 32 bit che formeranno l’impronta.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HmacPasses() {
+  return (
+    <ol className="crypto-hmac-passes" aria-label="Passaggi HMAC-SHA-256" role="list">
+      <li className="crypto-integrity-workbench">
+        <h3 className="crypto-stage-label">Hash interno</h3>
+        <p>
+          <KeyRound aria-hidden="true" /> Chiave preparata per l’interno + byte del messaggio
+        </p>
+        <p>
+          <ArrowRight aria-hidden="true" /> SHA-256 produce l’impronta interna (256 bit)
+        </p>
+      </li>
+      <li className="crypto-integrity-workbench">
+        <h3 className="crypto-stage-label">Hash esterno</h3>
+        <p>
+          <KeyRound aria-hidden="true" /> Chiave preparata per l’esterno + impronta interna
+        </p>
+        <p>
+          <ArrowRight aria-hidden="true" /> SHA-256 produce il tag (256 bit)
+        </p>
+      </li>
+    </ol>
   );
 }
 
@@ -247,7 +474,6 @@ function IntegrityValue({ label, value }: { label: string; value: string }) {
 }
 
 function IntegrityComparison({ method, sample }: { method: Method; sample: IntegrityCase }) {
-  const bytesId = useId();
   const inspectorId = useId();
   const [selectedByte, setSelectedByte] = useState(0);
   const useMac = method === "hmac";
@@ -282,25 +508,6 @@ function IntegrityComparison({ method, sample }: { method: Method; sample: Integ
     ? "Il controllo d’integrità riesce per questa copia."
     : "Il server rileva la modifica e scarta questa copia.";
 
-  function moveByte(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-    const grid = event.currentTarget.parentElement;
-    if (!grid) return;
-    const columns = Number(getComputedStyle(grid).getPropertyValue("--integrity-columns")) || 8;
-    const positions: Record<string, number> = {
-      ArrowLeft: index - 1,
-      ArrowRight: index + 1,
-      ArrowUp: index - columns,
-      ArrowDown: index + columns,
-      Home: 0,
-      End: bytes.length - 1,
-    };
-    if (!Object.hasOwn(positions, event.key)) return;
-    event.preventDefault();
-    const next = Math.max(0, Math.min(bytes.length - 1, positions[event.key]!));
-    setSelectedByte(next);
-    document.getElementById(`${bytesId}-${next}`)?.focus();
-  }
-
   return (
     <div className="crypto-symmetric">
       <section
@@ -325,7 +532,6 @@ function IntegrityComparison({ method, sample }: { method: Method; sample: Integ
             <div className="crypto-integrity-matrix" role="group" aria-label="Mappa dei 32 byte">
               {bytes.map((byte, index) => (
                 <button
-                  id={`${bytesId}-${index}`}
                   key={index}
                   type="button"
                   className="crypto-integrity-byte"
@@ -334,7 +540,7 @@ function IntegrityComparison({ method, sample }: { method: Method; sample: Integ
                   aria-pressed={selectedByte === index}
                   aria-controls={inspectorId}
                   onClick={() => setSelectedByte(index)}
-                  onKeyDown={(event) => moveByte(event, index)}
+                  onKeyDown={(event) => moveGridByte(event, index, bytes.length, setSelectedByte)}
                 >
                   <span className="crypto-integrity-byte-number" aria-hidden="true">
                     {String(index + 1).padStart(2, "0")}
@@ -394,7 +600,7 @@ function IntegrityComparison({ method, sample }: { method: Method; sample: Integ
         <p>
           <strong>{outcome}</strong>{" "}
           {sample.id === "amount"
-            ? `Una sola cifra dell’importo ha fatto cambiare ${totalChanges} bit in questa prova. I passaggi di SHA-256 mescolano i dati, quindi un piccolo cambiamento può propagarsi a molti bit. Il numero dipende dai messaggi confrontati.`
+            ? `Un solo bit diverso all’ingresso, ${totalChanges} bit diversi all’uscita. Il mescolamento di SHA-256 fa sì che anche piccole modifiche possano avere un effetto ampio, chiamato effetto valanga. Il numero dipende dai messaggi confrontati.`
             : sample.explanation}
         </p>
         <p>

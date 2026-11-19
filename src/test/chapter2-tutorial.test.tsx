@@ -15,6 +15,13 @@ describe("Tutorial di cifratura e integrità", () => {
     expect(screen.queryByRole("button", { name: "Verifica sul server" })).not.toBeInTheDocument();
 
     click("Cifra il contratto");
+    expect(screen.getByRole("button", { name: "Blocco 1 · 16 byte" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByLabelText("Primo byte in esadecimale")).toHaveTextContent("43 ⊕ 8d = ce");
+    click("Blocco 2 · 16 byte");
+    expect(screen.getByLabelText("Primo byte in esadecimale")).toHaveTextContent("6f ⊕ 83 = ec");
     click("Invia la busta");
     click("AAD del tenant errato");
     click("Passa al controllo del tag");

@@ -51,6 +51,54 @@ describe("Laboratorio di matematica crittografica", () => {
     expect(panel.queryByRole("button", { name: /resto 1$/ })).not.toBeInTheDocument();
   });
 
+  it("scopre i resti dei tentativi e ricava lo stesso inverso con Bézout", () => {
+    render(<ModularMathLab />);
+    const panel = openTab("Inversi");
+    fireEvent.click(panel.getByRole("button", { name: "Prova 3 modulo 7" }));
+    expect(panel.queryByRole("button", { name: "Moltiplicatore 5, resto 1" })).toBeNull();
+    fireEvent.click(panel.getByRole("button", { name: "Moltiplicatore 5" }));
+    expect(panel.getByText("5 è l’inverso di 3")).toBeVisible();
+    expect(panel.getByText("1 = (−2) × 3 + 1 × 7")).toBeInTheDocument();
+
+    fireEvent.click(panel.getByRole("button", { name: "Prova 3 modulo 9" }));
+    expect(panel.getByText("Nessun inverso")).toBeVisible();
+    expect(panel.getByText("MCD(3, 9) = 3")).toBeVisible();
+  });
+
+  it("verifica Eulero usando φ(n) e mostra il limite della coprimalità", () => {
+    render(<ModularMathLab />);
+    const panel = openTab("Fermat ed Eulero");
+    const click = (name: string) => fireEvent.click(panel.getByRole("button", { name }));
+
+    click("Prova 2 modulo 9");
+    click("Moltiplica i coprimi");
+    expect(panel.getByRole("button", { name: "Da 5 al resto 1" })).toBeVisible();
+    click("Verifica la potenza");
+    expect(panel.getByLabelText("Potenza di Eulero")).toHaveTextContent("mod 9 = 1");
+
+    click("Prova 3 modulo 9");
+    click("Moltiplica i coprimi");
+    expect(panel.getByText("2 resti distinti su 6")).toBeVisible();
+    click("Verifica la potenza");
+    expect(panel.getByLabelText("Potenza di Eulero")).toHaveTextContent("mod 9 = 0");
+  });
+
+  it("incrocia due classi nel CRT e segnala i resti incompatibili", () => {
+    render(<ModularMathLab />);
+    const panel = openTab("CRT");
+    const click = (name: string) => fireEvent.click(panel.getByRole("button", { name }));
+
+    click("Applica il primo resto");
+    expect(panel.queryByLabelText("Intersezione dei resti")).toBeNull();
+    click("Incrocia i due resti");
+    expect(panel.getByLabelText("Intersezione dei resti")).toHaveTextContent("x ≡ 8 (mod 15)");
+
+    fireEvent.change(panel.getByLabelText("Secondo modulo"), { target: { value: "6" } });
+    click("Applica il primo resto");
+    click("Incrocia i due resti");
+    expect(panel.getByLabelText("Intersezione dei resti")).toHaveTextContent("Nessuna soluzione");
+  });
+
   it("avanza dall'orologio a Euclide e rivela il MCD all'ultima divisione", () => {
     render(<ModularMathLab />);
     fireEvent.click(screen.getByRole("button", { name: "Vai a Euclide" }));

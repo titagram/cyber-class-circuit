@@ -3,7 +3,6 @@ export const aeadEnvelope = {
   nonce: "f3b2c8818e9501b42ade064d",
   ciphertext: "ce604ce234164db39362b1a89368c525ecb380c59ef04b3cd7b54f8870fb2c4a83",
   tag: "bcef02dd6e49db6be38e022bb118c3c1",
-  maskFirstByte: "8d",
   aad: "tenant=alfa&documento=42",
   plaintext: "Contratto 42\nImporto: EUR 125.000",
 } as const;

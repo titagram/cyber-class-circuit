@@ -8,15 +8,194 @@
   gap: 0.6rem;
 }
 
-.crypto-integrity-operation {
+.crypto-integrity-workbench {
   display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
-  align-items: center;
   gap: 0.65rem;
+  min-width: 0;
+  border: 1px solid var(--nr-border);
+  border-top-color: var(--nr-cyan);
+  padding: clamp(0.65rem, 2.1vw, 1rem);
+  background: var(--nr-panel);
+  container-type: inline-size;
 }
 
-.crypto-integrity-operation .crypto-integrity-method {
-  min-height: 2.75rem;
+.crypto-input-byte-grid,
+.crypto-sha-block {
+  --integrity-columns: 16;
+  display: grid;
+  grid-template-columns: repeat(var(--integrity-columns), minmax(0, 1fr));
+  gap: 0.22rem;
+}
+
+.crypto-input-byte.crypto-integrity-byte {
+  min-height: 2.7rem;
+  align-content: center;
+  justify-items: center;
+  padding-inline: 0;
+  color: var(--nr-text);
+  font:
+    0.85rem / 1.05 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+}
+
+.crypto-input-byte code {
+  color: var(--nr-muted);
+  font-size: 0.72rem;
+}
+
+.crypto-input-byte[aria-pressed="true"] code {
+  color: var(--nr-cyan);
+}
+
+.crypto-input-byte-inspector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 6.5rem), 1fr));
+  gap: 0.55rem;
+  margin: 0;
+  padding-top: 0.58rem;
+  border-top: 1px solid var(--nr-border);
+}
+
+.crypto-input-byte-inspector dt {
+  color: var(--nr-muted);
+  font-size: 0.76rem;
+}
+
+.crypto-input-byte-inspector dd {
+  margin: 0;
+  color: var(--nr-text);
+  font-size: 0.94rem;
+}
+
+.crypto-input-change {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(0.3rem, 2vw, 1rem);
+  max-width: 30rem;
+}
+
+.crypto-input-change-value {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.crypto-input-change-bits {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 2px;
+  font-size: 0.8rem;
+}
+
+.crypto-input-change-bits span {
+  min-width: 0;
+  padding-block: 0.15rem;
+  border-bottom: 2px solid transparent;
+  background: var(--nr-panel-end);
+  color: var(--nr-muted);
+  text-align: center;
+}
+
+.crypto-input-change-bits [data-changed="true"] {
+  border-color: var(--nr-yellow);
+  color: var(--nr-yellow);
+}
+
+.crypto-sha-block code,
+.crypto-sha-legend li > span {
+  --byte-color: var(--nr-cyan);
+  border: 1px solid color-mix(in srgb, var(--byte-color) 40%, var(--nr-panel));
+  background: color-mix(in srgb, var(--byte-color) 10%, var(--nr-panel-end));
+  color: var(--byte-color);
+}
+
+.crypto-sha-block code {
+  min-width: 0;
+  padding-block: 0.25rem;
+  font-size: clamp(0.66rem, 2.2vw, 0.86rem);
+  text-align: center;
+}
+
+.crypto-sha-block [data-sha-byte-kind="padding"],
+.crypto-sha-legend [data-sha-part="padding"] > span {
+  --byte-color: var(--nr-muted);
+}
+
+.crypto-sha-block [data-sha-byte-kind="length"],
+.crypto-sha-legend [data-sha-part="length"] > span {
+  --byte-color: var(--nr-violet, var(--nr-coral));
+}
+
+.crypto-sha-block [data-changed="true"],
+.crypto-sha-legend [data-sha-part="changed"] > span {
+  --byte-color: var(--nr-yellow);
+  border-color: var(--byte-color);
+}
+
+.crypto-sha-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.9rem;
+  margin: 0;
+  padding: 0;
+  color: var(--nr-muted);
+  font-size: 0.77rem;
+  list-style: none;
+}
+
+.crypto-sha-legend li {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem;
+}
+
+.crypto-sha-legend li > span {
+  width: 0.62rem;
+  height: 0.62rem;
+}
+
+.crypto-sha-mixing {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--nr-border);
+  color: var(--nr-text);
+}
+
+.crypto-sha-mixing > svg,
+.crypto-hmac-passes p > svg {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  color: var(--nr-cyan);
+}
+
+.crypto-sha-mixing > svg {
+  margin-top: 0.2rem;
+}
+
+.crypto-hmac-passes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crypto-hmac-passes p {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--nr-text);
+  font-size: 0.84rem;
+  line-height: 1.35;
 }
 
 .crypto-integrity-values {
@@ -52,18 +231,15 @@
   color: var(--nr-text);
 }
 
-@media (max-width: 730px) {
-  .crypto-integrity-operation {
+@container (max-width: 510px) {
+  .crypto-input-byte-grid,
+  .crypto-sha-block {
+    --integrity-columns: 8;
+  }
+}
+
+@media (max-width: 630px) {
+  .crypto-hmac-passes {
     grid-template-columns: minmax(0, 1fr);
-    gap: 0.45rem;
-  }
-
-  .crypto-integrity-operation .crypto-integrity-arrow {
-    margin-inline: 0.9rem auto;
-    rotate: 90deg;
-  }
-
-  .crypto-integrity-operation .crypto-integrity-method {
-    justify-self: start;
   }
 }

@@ -1,262 +1,354 @@
-import { useId, useState } from "react";
+import { useState } from "react";
 import {
   ArrowLeft,
   ArrowRight,
   BadgeCheck,
   Ban,
-  Check,
-  Clock,
   FileKey,
   KeyRound,
   LockKeyhole,
   Monitor,
   Network,
-  RotateCcw,
   Server,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { TutorialFrame, type TutorialStep } from "./TutorialFrame";
 import "./TrustLabs.css";
 
 const tlsHops = {
   external: {
-    label: "Browser → Reverse proxy",
     host: "gestionale.example",
     otherHost: "report.example",
     session: "A",
     client: "Browser",
     server: "Reverse proxy",
+    publicKey: ["pubblica effimera del browser", "pubblica effimera del proxy"],
+    receivedAt: "Al reverse proxy",
   },
   internal: {
-    label: "Proxy → Backend",
     host: "backend.example",
     otherHost: "archivio.example",
     session: "B",
     client: "Reverse proxy",
     server: "Backend",
+    publicKey: ["nuova pubblica effimera del proxy", "pubblica effimera del backend"],
+    receivedAt: "Al backend",
   },
 } as const;
-type Hop = keyof typeof tlsHops;
 
-const tlsSteps = [
-  "Scambio effimero",
-  "Verifica certificato",
-  "Finished e chiavi",
-  "Dati applicativi",
-] as const;
-type Step = 0 | 1 | 2 | 3;
+const request = "GET /api/documents/42";
+type HopId = keyof typeof tlsHops;
+type Hop = (typeof tlsHops)[HopId];
+type ConnectionStatus = "waiting" | "active" | "blocked" | "success";
 
-type Connection = { step: Step; matches: boolean };
-const initialConnections: Record<Hop, Connection> = {
-  external: { step: 0, matches: true },
-  internal: { step: 0, matches: true },
-};
+function buildSteps(hopId: HopId): readonly TutorialStep[] {
+  const hop = tlsHops[hopId];
+
+  return [
+    {
+      label: "Scambio",
+      title:
+        hopId === "external"
+          ? "Il browser vuole leggere il contratto 42"
+          : "Il proxy apre un nuovo collegamento",
+      explanation: (
+        <p>
+          {hopId === "external"
+            ? "Il browser ha una richiesta pronta per il gestionale. In questa prova la invierà dopo aver stabilito TLS 1.3 con il reverse proxy."
+            : "Il proxy ha ricevuto e decifrato la richiesta dalla sessione A. Ora agisce come client e apre la sessione B con il backend. Per B crea un’altra coppia effimera."}{" "}
+          Con ECDHE ciascuna parte invia il valore pubblico di una coppia di breve durata. Il valore
+          privato resta presso chi lo ha generato.
+        </p>
+      ),
+    },
+    {
+      label: "Certificato",
+      title: "Dopo lo scambio, il server presenta la sua identità",
+      explanation: (
+        <p>
+          Ognuno combina il valore pubblico ricevuto con il proprio valore privato e ricava lo
+          stesso segreto. Da questo derivano le chiavi per proteggere i messaggi successivi
+          dell’handshake. Il server invia il certificato e <code>CertificateVerify</code>, una firma
+          che include l’impronta dei messaggi scambiati e dimostra il possesso della chiave privata
+          del certificato. Scegli il nome che compare nel certificato.
+        </p>
+      ),
+    },
+    {
+      label: "Identità",
+      title: "Il client controlla la catena e il nome",
+      explanation: (
+        <p>
+          Il client verifica la firma del server, la catena del certificato e le date di validità.
+          Cerca inoltre il nome richiesto fra quelli elencati nel certificato (SAN). In questa prova
+          catena, firma e date sono corrette. Osserva se il nome consente di proseguire.
+        </p>
+      ),
+    },
+    {
+      label: "Finished",
+      title: "Le due parti confermano l’integrità dello scambio",
+      explanation: (
+        <p>
+          Il server manda il proprio <code>Finished</code> e il client lo verifica prima di
+          rispondere con il suo. Ognuno calcola un HMAC sull’impronta dei messaggi precedenti,
+          usando una chiave derivata per quel <code>Finished</code>. Se i controlli riescono, il
+          traffico applicativo usa due chiavi distinte, una per direzione.
+        </p>
+      ),
+    },
+    {
+      label: "Richiesta",
+      title:
+        hopId === "external" ? "La richiesta arriva al proxy" : "La richiesta arriva al backend",
+      explanation: (
+        <p>
+          {hopId === "external"
+            ? "Il browser invia la richiesta cifrata nella sessione A. Il reverse proxy termina il collegamento TLS, quindi può leggere la richiesta. Per inoltrarla al backend userà la sessione B."
+            : "Il proxy cifra di nuovo la stessa richiesta con la chiave di invio della sessione B. Il backend la decifra e può verificare i permessi sul contratto 42."}
+        </p>
+      ),
+    },
+  ];
+}
 
 export function TlsHandshakeLab() {
-  const hopStatusPrefix = useId();
-  const [hopId, setHopId] = useState<Hop>("external");
-  const [connections, setConnections] = useState(initialConnections);
+  const [hopId, setHopId] = useState<HopId>("external");
+  const [step, setStep] = useState(0);
+  const [matches, setMatches] = useState(true);
   const hop = tlsHops[hopId];
-  const { step, matches } = connections[hopId];
-  const externalRequestSent = connections.external.step === 3;
-  const internalRequestForwarded = connections.internal.step === 3;
-  const requestReady = hopId === "external" || externalRequestSent;
-  const reachedEnd = step === 3 || (step === 1 && !matches);
+  const failed = step === 2 && !matches;
+  const steps = buildSteps(hopId);
+  const nextLabels = [
+    "Scambia i valori effimeri",
+    "Verifica il certificato",
+    "Scambia i Finished",
+    hopId === "external" ? "Invia la richiesta sul tratto A" : "Inoltra la richiesta sul tratto B",
+  ];
+  const currentStatus = failed ? "blocked" : step >= 3 ? "success" : "active";
 
-  function setScenario(nextMatches: boolean) {
-    setConnections((current) => ({
-      ...current,
-      [hopId]: { step: 1, matches: nextMatches },
-    }));
+  function switchHop(nextHop: HopId, nextStep: number) {
+    setHopId(nextHop);
+    setStep(nextStep);
+    setMatches(true);
   }
 
-  function selectStep(nextStep: Step) {
-    setConnections((current) => ({
-      ...current,
-      [hopId]: { ...current[hopId], step: nextStep },
-    }));
-  }
-
-  function hopControl(id: Hop) {
-    const link = tlsHops[id];
-    const connection = connections[id];
-    const blocked = !connection.matches && connection.step >= 1;
-    const established = connection.step >= 2;
-    const Icon = blocked ? Ban : established ? LockKeyhole : KeyRound;
-
-    return (
-      <button
-        type="button"
-        className="tls-hop"
-        aria-label={link.label}
-        aria-describedby={`${hopStatusPrefix}-${id}`}
-        aria-pressed={id === hopId}
-        onClick={() => setHopId(id)}
-        data-state={blocked ? "blocked" : established ? "success" : "active"}
-      >
-        <span className="tls-hop-key">
-          <Icon aria-hidden="true" />
-          <strong>{link.session}</strong>
-        </span>
-        <span id={`${hopStatusPrefix}-${id}`}>
-          {blocked ? "Certificato rifiutato" : established ? `chiavi ${link.session}` : "Handshake"}
-        </span>
-      </button>
-    );
-  }
+  const actions = failed ? (
+    <Button variant="outline" onClick={() => setStep(0)}>
+      Prova un altro nome
+    </Button>
+  ) : step === 4 ? (
+    <Button onClick={() => switchHop(hopId === "external" ? "internal" : "external", 0)}>
+      {hopId === "external" ? "Apri la sessione B" : "Ricomincia il percorso"}
+      <ArrowRight aria-hidden="true" />
+    </Button>
+  ) : hopId === "internal" && step === 0 ? (
+    <Button variant="outline" onClick={() => switchHop("external", 4)}>
+      <ArrowLeft aria-hidden="true" /> Torna alla sessione A
+    </Button>
+  ) : null;
 
   return (
-    <section className="crypto-stage trust-stage" aria-label="Laboratorio dell’handshake TLS">
-      <header className="crypto-stage-label">TLS 1.3 · scegli un tratto</header>
-      <div className="tls-topology" role="group" aria-label="Collegamento TLS osservato">
-        <div
-          className="crypto-node tls-actor"
-          data-state={hopId === "external" ? "active" : undefined}
-        >
-          <Monitor aria-hidden="true" />
-          <span>Browser</span>
-        </div>
-        {hopControl("external")}
-        <div className="crypto-node tls-actor" data-state="active">
-          <Network aria-hidden="true" />
-          <span>Reverse proxy</span>
-        </div>
-        {hopControl("internal")}
-        <div
-          className="crypto-node tls-actor"
-          data-state={hopId === "internal" ? "active" : undefined}
-        >
-          <Server aria-hidden="true" />
-          <span>Backend</span>
-        </div>
-      </div>
-
-      <div className="tls-steps" role="group" aria-label="Fasi dell’handshake TLS 1.3">
-        {tlsSteps.map((label, index) => (
-          <Button
-            key={label}
-            size="sm"
-            variant={index === step ? "default" : "outline"}
-            aria-current={index === step ? "step" : undefined}
-            disabled={!matches && index > 1}
-            onClick={() => selectStep(index as Step)}
+    <TutorialFrame
+      steps={steps}
+      activeStep={step}
+      onStepChange={setStep}
+      canAdvance={!failed}
+      nextLabel={nextLabels[step] ?? "Passo successivo"}
+      actions={actions}
+    >
+      <div className="crypto-stage trust-stage">
+        <div className="tls-topology" role="group" aria-label="Collegamenti TLS">
+          <div
+            className="crypto-node tls-actor"
+            data-state={hopId === "external" ? "active" : undefined}
           >
-            <span aria-hidden="true">{index < step ? <Check /> : index + 1}</span>
-            {label}
-          </Button>
-        ))}
-      </div>
-
-      <section className="tls-trace" aria-label="Stato dell’handshake" aria-live="polite">
-        <div className="tls-trace-endpoints">
-          <span>
-            {hop.client} <small>Client</small>
-          </span>
-          <span>
-            <small>Server</small> {hop.server}
-          </span>
+            <Monitor aria-hidden="true" />
+            <span>Browser</span>
+          </div>
+          <TlsHop
+            session="A"
+            current={hopId === "external"}
+            status={hopId === "external" ? currentStatus : "success"}
+          />
+          <div className="crypto-node tls-actor" data-state="active">
+            <Network aria-hidden="true" />
+            <span>Reverse proxy</span>
+          </div>
+          <TlsHop
+            session="B"
+            current={hopId === "internal"}
+            status={hopId === "internal" ? currentStatus : "waiting"}
+          />
+          <div
+            className="crypto-node tls-actor"
+            data-state={hopId === "internal" ? "active" : undefined}
+          >
+            <Server aria-hidden="true" />
+            <span>Backend</span>
+          </div>
         </div>
-        <div
-          className="tls-signals"
-          key={`${hopId}-${step}-${matches}-${step === 3 && requestReady}`}
-        >
-          {step === 0 && (
-            <>
-              <TlsSignal label="ClientHello · chiave effimera" icon={KeyRound} />
-              <TlsSignal label="ServerHello · chiave effimera" icon={KeyRound} reverse />
-            </>
-          )}
-          {step === 1 && (
-            <>
-              <TlsSignal label="Certificate · CertificateVerify" icon={FileKey} reverse />
-              <div className="tls-hostnames" data-state={matches ? "success" : "blocked"}>
-                <div>
-                  <span>Host richiesto</span>
-                  <code>{hop.host}</code>
-                </div>
-                <strong aria-hidden="true">{matches ? "=" : "≠"}</strong>
-                <div>
-                  <span>Nome nel certificato (SAN)</span>
-                  <code>{matches ? hop.host : hop.otherHost}</code>
-                </div>
-              </div>
-              <p className="tls-outcome" data-state={matches ? "success" : "blocked"}>
-                {matches ? <BadgeCheck aria-hidden="true" /> : <Ban aria-hidden="true" />}
-                {matches ? "Identità del server verificata" : "Handshake interrotto"}
-              </p>
-            </>
-          )}
-          {step === 2 && (
-            <>
-              <TlsSignal label="Finished del server" icon={LockKeyhole} reverse />
-              <TlsSignal label="Finished del client" icon={LockKeyhole} />
-            </>
-          )}
-          {step === 3 &&
-            (requestReady ? (
+
+        <section className="tls-trace" aria-label={`Sessione TLS ${hop.session}`}>
+          <div className="tls-trace-endpoints">
+            <span>
+              {hop.client} <small>Client</small>
+            </span>
+            <span>
+              <small>Server</small> {hop.server}
+            </span>
+          </div>
+
+          <div className="tls-signals" key={`${hopId}-${step}`}>
+            {step === 0 && (
               <>
-                <TlsSignal
-                  label={`Record TLS cifrato · sessione ${hop.session}`}
-                  icon={LockKeyhole}
-                />
                 <p className="tls-plaintext">
-                  <span>In chiaro al {hop.server.toLowerCase()}</span>{" "}
-                  <code>GET /api/documents/42</code>
+                  Richiesta in attesa <code>{request}</code>
                 </p>
+                <div className="tls-hostnames">
+                  <div>
+                    <span>Client</span>
+                    <code>Coppia effimera locale</code>
+                  </div>
+                  <KeyRound aria-hidden="true" />
+                  <div>
+                    <span>Server</span>
+                    <code>Coppia effimera locale</code>
+                  </div>
+                </div>
               </>
-            ) : (
-              <p className="tls-outcome">
-                <Clock aria-hidden="true" /> Il backend attende il tratto Browser → Reverse proxy.
-              </p>
-            ))}
-        </div>
-      </section>
+            )}
 
-      <div className="tls-controls">
-        <div className="crypto-controls" role="group" aria-label="Nome nel certificato">
-          <span className="crypto-label">Nome nel certificato</span>
-          <Button
-            size="sm"
-            variant={matches ? "default" : "outline"}
-            aria-pressed={matches}
-            onClick={() => setScenario(true)}
-          >
-            Nome corretto
-          </Button>
-          <Button
-            size="sm"
-            variant={matches ? "outline" : "default"}
-            aria-pressed={!matches}
-            onClick={() => setScenario(false)}
-          >
-            Nome diverso
-          </Button>
-        </div>
-        <Button size="sm" onClick={() => selectStep(reachedEnd ? 0 : ((step + 1) as Step))}>
-          {reachedEnd ? <RotateCcw aria-hidden="true" /> : <ArrowRight aria-hidden="true" />}
-          {reachedEnd ? "Ricomincia il tratto" : "Passo successivo"}
-        </Button>
+            {step === 1 && (
+              <>
+                <TlsSignal label={`ClientHello · ${hop.publicKey[0]}`} icon={KeyRound} />
+                <TlsSignal label={`ServerHello · ${hop.publicKey[1]}`} icon={KeyRound} reverse />
+                <TlsSignal label="Certificate · CertificateVerify" icon={FileKey} reverse />
+                <HostComparison hop={hop} matches={matches} />
+                <div
+                  className="crypto-controls tls-certificate-controls"
+                  role="group"
+                  aria-label="Nome nel certificato"
+                >
+                  <Button
+                    variant={matches ? "default" : "outline"}
+                    aria-pressed={matches}
+                    onClick={() => setMatches(true)}
+                  >
+                    Nome corretto
+                  </Button>
+                  <Button
+                    variant={matches ? "outline" : "default"}
+                    aria-pressed={!matches}
+                    onClick={() => setMatches(false)}
+                  >
+                    Nome diverso
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <HostComparison hop={hop} matches={matches} checked />
+                <p className="tls-outcome" data-state={matches ? "success" : "blocked"}>
+                  {matches ? <BadgeCheck aria-hidden="true" /> : <Ban aria-hidden="true" />}
+                  {matches ? "Identità del server verificata" : "Handshake interrotto"}
+                </p>
+                {failed && (
+                  <p className="crypto-legend">
+                    Il nome richiesto manca nel certificato. La richiesta rimane in attesa.
+                  </p>
+                )}
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <TlsSignal label="Finished del server" icon={LockKeyhole} reverse />
+                <TlsSignal label="Finished del client" icon={LockKeyhole} />
+                <div
+                  className="tls-key-directions"
+                  aria-label={`Chiavi di traffico della sessione ${hop.session}`}
+                >
+                  <p className="trust-data">
+                    <KeyRound aria-hidden="true" /> <code>{hop.session}₁</code>
+                    {hop.client} → {hop.server}
+                  </p>
+                  <p className="trust-data">
+                    <KeyRound aria-hidden="true" /> <code>{hop.session}₂</code>
+                    {hop.server} → {hop.client}
+                  </p>
+                </div>
+              </>
+            )}
+
+            {step === 4 && (
+              <>
+                <TlsSignal label={`Record TLS cifrato con ${hop.session}₁`} icon={LockKeyhole} />
+                <section className="tls-plaintext" aria-label="Richiesta ricevuta">
+                  <span>{hop.receivedAt}, in chiaro</span> <code>{request}</code>
+                </section>
+              </>
+            )}
+          </div>
+        </section>
       </div>
-      <p className="crypto-legend">
-        {step === 0 &&
-          "Con ECDHE entrambe le parti ricavano lo stesso segreto e proteggono il resto dell’handshake."}
-        {step === 1 &&
-          (matches
-            ? "Il client controlla catena, scadenza e nome. CertificateVerify dimostra che il server possiede la chiave privata."
-            : "La catena è fidata e il certificato è in corso di validità. La differenza di nome blocca questo tratto.")}
-        {step === 2 &&
-          "I due Finished confermano l’integrità dell’handshake. Ogni direzione ha la propria chiave di traffico."}
-        {step === 3 &&
-          (hopId === "external"
-            ? internalRequestForwarded
-              ? "Il proxy decifra la richiesta in ingresso e la cifra di nuovo per il tratto interno."
-              : "Il proxy decifra la richiesta. Per seguirne l’inoltro, porta il tratto verso il backend a Dati applicativi."
-            : requestReady &&
-              "Il backend decifra i dati della sessione B e verifica i permessi sul contratto.")}
-        {step === 3 &&
-          !requestReady &&
-          "La sessione interna è pronta. Invia prima i dati sul tratto dal browser."}
-      </p>
-    </section>
+    </TutorialFrame>
+  );
+}
+
+function TlsHop({
+  session,
+  current,
+  status,
+}: {
+  session: Hop["session"];
+  current: boolean;
+  status: ConnectionStatus;
+}) {
+  const Icon = status === "blocked" ? Ban : status === "success" ? LockKeyhole : KeyRound;
+  const labels = {
+    active: "Handshake",
+    blocked: "Interrotta",
+    success: `Chiavi ${session}`,
+    waiting: "In attesa",
+  };
+
+  return (
+    <div className="tls-hop" aria-current={current ? "step" : undefined} data-state={status}>
+      <span className="tls-hop-key">
+        <Icon aria-hidden="true" /> <strong>{session}</strong>
+      </span>
+      <span>{labels[status]}</span>
+    </div>
+  );
+}
+
+function HostComparison({
+  hop,
+  matches,
+  checked = false,
+}: {
+  hop: Hop;
+  matches: boolean;
+  checked?: boolean;
+}) {
+  return (
+    <div
+      className="tls-hostnames"
+      data-state={checked ? (matches ? "success" : "blocked") : undefined}
+    >
+      <div>
+        <span>Host richiesto</span>
+        <code>{hop.host}</code>
+      </div>
+      {checked && <strong aria-hidden="true">{matches ? "=" : "≠"}</strong>}
+      <div>
+        <span>Nome nel certificato (SAN)</span>
+        <code>{matches ? hop.host : hop.otherHost}</code>
+      </div>
+    </div>
   );
 }
 
@@ -270,7 +362,6 @@ function TlsSignal({
   reverse?: boolean;
 }) {
   const Arrow = reverse ? ArrowLeft : ArrowRight;
-
   return (
     <div className="tls-signal" data-reverse={reverse}>
       <span className="tls-signal-marker">

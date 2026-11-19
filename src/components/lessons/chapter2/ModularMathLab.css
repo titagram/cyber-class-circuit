@@ -21,6 +21,8 @@
   color: var(--nr-muted);
   font-size: 0.95rem;
   letter-spacing: 0.02em;
+  line-height: 1.15;
+  white-space: normal;
 }
 
 .math-tab-number {
@@ -979,9 +981,130 @@
   margin-top: 0.45rem;
 }
 
+.math-bezout-line {
+  flex-wrap: wrap;
+}
+
+.math-theorem-board {
+  display: grid;
+  min-width: 0;
+  gap: 0.65rem;
+  border: 1px solid var(--nr-border);
+  padding: 0.75rem;
+  background: var(--nr-panel);
+}
+
+.math-theorem-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+}
+
+.math-theorem-head > * {
+  border-bottom: 1px solid var(--nr-border);
+  padding-bottom: 0.25rem;
+}
+
+.math-permutation,
+.math-crt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
+  gap: 0.35rem;
+}
+
+.math-permutation button,
+.math-crt-grid li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  min-height: 44px;
+  border: 1px solid var(--nr-border);
+  padding: 0.22rem;
+  background: var(--nr-panel-end);
+  color: var(--nr-cyan);
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.math-permutation button:not(:disabled) {
+  cursor: pointer;
+}
+
+.math-permutation button svg {
+  flex: none;
+  width: 0.8rem;
+  height: 0.8rem;
+  color: var(--nr-muted);
+}
+
+.math-permutation button[data-outside="true"] {
+  border-color: var(--nr-coral);
+  color: var(--nr-off-text);
+}
+
+.math-permutation button[aria-pressed="true"] {
+  outline: 1px solid var(--nr-yellow);
+  outline-offset: -2px;
+}
+
+.math-permutation button:focus-visible {
+  outline: 2px solid var(--nr-cyan);
+  outline-offset: 2px;
+}
+
+.math-crt-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: 0.55rem 0.85rem;
+}
+
+.math-crt-settings .math-settings {
+  width: 100%;
+}
+
+.math-crt-grid {
+  grid-template-columns: repeat(auto-fill, minmax(2.6rem, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.math-crt-grid li {
+  flex-direction: column;
+  gap: 0.1rem;
+  color: var(--nr-muted);
+  line-height: 1.2;
+}
+
+.math-crt-grid li span {
+  font-size: 0.63rem;
+}
+
+.math-crt-first,
+.math-crt-grid li[data-first="true"] {
+  border-color: var(--nr-cyan);
+  color: var(--nr-cyan);
+}
+
+.math-crt-second,
+.math-crt-grid li[data-second="true"] {
+  border-color: var(--nr-off-text);
+  color: var(--nr-off-text);
+}
+
+.math-crt-grid li[data-match="true"] {
+  border-color: var(--nr-yellow);
+  background: color-mix(in srgb, var(--nr-yellow) 12%, var(--nr-panel-end));
+  color: var(--nr-yellow);
+}
+
 @container (min-width: 31rem) {
   .modular-math-lab .math-tabs {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .math-tabs .nr-tab:last-child {
+    grid-column: auto;
   }
 
   .math-product-grid {
@@ -999,11 +1122,11 @@
 
 @container (min-width: 50rem) {
   .modular-math-lab .math-tabs {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .math-tabs .nr-tab:last-child {
-    grid-column: auto;
+    grid-column: span 2;
   }
 
   .math-rsa-stages {

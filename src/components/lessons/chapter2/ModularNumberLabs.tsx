@@ -1,7 +1,14 @@
 import { useId, useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { HudButton, HudTextField } from "@/design-system/nightrunner";
-import { euclideanDivisions, gcd, modularPower, modulo, residues } from "./modular-arithmetic";
+import {
+  euclideanDivisions,
+  extendedEuclid,
+  gcd,
+  modularPower,
+  modulo,
+  residues,
+} from "./modular-arithmetic";
 
 const positiveNumbers = residues(61).slice(1);
 const phiModuli = residues(31).slice(2);
@@ -175,6 +182,47 @@ export function CoprimeLab() {
   );
 }
 
+function signedCoefficient(value: number) {
+  return value < 0 ? `(−${Math.abs(value)})` : String(value);
+}
+
+export function BezoutCalculation({ factor, modulus }: { factor: number; modulus: number }) {
+  const { first, second, divisor, trace } = extendedEuclid(modulus, factor);
+
+  return (
+    <>
+      <p className="math-tutorial-copy">
+        Ogni divisione scrive il resto come differenza, r = dividendo − quoziente × divisore.
+        Sostituisci nei resti successivi le espressioni già trovate. Così arrivi al MCD, espresso
+        come somma di un multiplo di {factor} e di un multiplo di {modulus}.
+      </p>
+      <ol className="math-division-list" aria-label="Divisioni e sostituzioni di Euclide esteso">
+        {trace.map((division) => (
+          <li key={division.divisor} className="math-bezout-line">
+            <strong className="math-expression">
+              {division.dividend} = {division.quotient} × {division.divisor} + {division.remainder}
+            </strong>
+            {division.remainder > 0 && (
+              <span className="math-expression">
+                Sostituzione · {division.remainder} = {signedCoefficient(division.second)} ×{" "}
+                {factor} + {signedCoefficient(division.first)} × {modulus}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+      <strong className="math-readout">
+        {divisor} = {signedCoefficient(second)} × {factor} + {signedCoefficient(first)} × {modulus}
+      </strong>
+      <p className="math-tutorial-copy">
+        {divisor === 1
+          ? `Modulo ${modulus}, il secondo termine sparisce perché è un multiplo del modulo. Il coefficiente ${second} basta per ottenere resto 1. Il suo rappresentante tra 0 e ${modulus - 1} è ${modulo(second, modulus)}, quindi questo è l’inverso.`
+          : `Ogni somma di questi multipli è divisibile per ${divisor}. Per questo ogni prodotto per ${factor} lascia un resto divisibile per ${divisor} e l’inverso è impossibile.`}
+      </p>
+    </>
+  );
+}
+
 export function MiniRsaLab() {
   const [stage, setStage] = useState(0);
   const [p, setP] = useState(5);
@@ -183,11 +231,8 @@ export function MiniRsaLab() {
   const [entry, setEntry] = useState("7");
   const n = p * q;
   const phi = (p - 1) * (q - 1);
-  const divisor = gcd(e, phi);
-  const d =
-    stage >= 2 && divisor === 1
-      ? residues(phi).find((candidate) => modulo(e * candidate, phi) === 1)
-      : undefined;
+  const { divisor, second: coefficient } = extendedEuclid(phi, e);
+  const d = stage >= 2 && divisor === 1 ? modulo(coefficient, phi) : undefined;
   const m = Number(entry);
   const validMessage = /^\d+$/.test(entry.trim()) && m < n;
   const cipher = stage >= 4 ? modularPower(m, e, n).result : undefined;
@@ -335,13 +380,13 @@ export function MiniRsaLab() {
         {stage === 2 && d !== undefined && (
           <>
             <p className="math-tutorial-copy">
-              Cerchiamo d come nel laboratorio sugli inversi. Proviamo i moltiplicatori da 1 a φ(n)
-              − 1 finché e × d diviso per φ(n) lascia resto 1.
+              Come nel laboratorio sugli inversi, vogliamo che e × d diviso per φ(n) lasci resto 1.
+              Con Euclide esteso ricaviamo il coefficiente di e e lo riduciamo modulo φ(n).
             </p>
-            <p className="math-tutorial-copy">
-              Con d = {d - 1}, il resto di {e} × {d - 1} modulo {phi} è {modulo(e * (d - 1), phi)}.
-              Continuando con d = {d}, si trova il resto 1.
-            </p>
+            <details className="math-details" open>
+              <summary>Calcola il coefficiente con Euclide esteso</summary>
+              <BezoutCalculation factor={e} modulus={phi} />
+            </details>
             <div className="math-number-result">
               <strong className="math-readout">
                 ({e} × {d}) mod {phi} = 1
@@ -411,16 +456,20 @@ export function MiniRsaLab() {
                 lascia lo stesso resto di m modulo p. Lo stesso vale modulo q.
               </p>
               <p className="math-tutorial-copy">
-                Per vedere da dove viene quel resto 1, moltiplica per m ciascuno dei resti da 1 a p
-                − 1. Quando m è coprimo con p, questa operazione riordina le posizioni, come nel
-                laboratorio sugli inversi. Il loro prodotto resta quindi congruente allo stesso
-                prodotto moltiplicato per m<sup>p − 1</sup>. Siccome il prodotto è invertibile
-                modulo p, puoi cancellarlo e ottenere il resto 1.
+                Controlla i due resti del risultato. La potenza di decifratura lascia resto{" "}
+                <strong>
+                  {modularPower(cipher, d, p).result} modulo {p}
+                </strong>{" "}
+                e resto{" "}
+                <strong>
+                  {modularPower(cipher, d, q).result} modulo {q}
+                </strong>
+                . Sono gli stessi resti del messaggio m = {m}.
               </p>
               <p className="math-tutorial-copy">
-                Due numeri con gli stessi resti modulo p e modulo q differiscono di un multiplo di
-                entrambi. Poiché p e q sono primi distinti, la differenza è multipla di p × q. I due
-                resti individuano quindi un unico m nell’intervallo da 0 a n − 1.
+                Il teorema cinese del resto garantisce che quei due resti individuano un solo numero
+                tra 0 e {n - 1}. È possibile quindi decifrare con due calcoli sui moduli più piccoli
+                p e q, poi ricostruire il risultato modulo n.
               </p>
             </details>
           </>

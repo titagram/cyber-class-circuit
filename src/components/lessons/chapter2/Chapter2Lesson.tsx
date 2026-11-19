@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, ChevronDown, ExternalLink } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { chapter2, cryptoLessonIds, type CryptoLessonId } from "@/content/lessons/chapter2";
+import { ByteEncodingLab } from "./ByteEncodingLab";
 import { AuthenticatedEncryptionLab } from "./AuthenticatedEncryptionLab";
 import { IntegrityLab } from "./IntegrityLab";
 import { ModularMathLab } from "./ModularMathLab";
@@ -11,6 +12,7 @@ import { KeyLifecycleLab, SignatureLab, TlsHandshakeLab } from "./TrustAndLifecy
 import "./Chapter2Lesson.css";
 
 const labs = {
+  "cybersecurity-2-0": ByteEncodingLab,
   "cybersecurity-2-1": AuthenticatedEncryptionLab,
   "cybersecurity-2-2": IntegrityLab,
   "cybersecurity-2-3": ModularMathLab,

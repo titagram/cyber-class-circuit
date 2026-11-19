@@ -2,7 +2,14 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ArrowLeft, ArrowRight, LockKeyhole, ScanLine, UnlockKeyhole } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HudButton, HudTextField } from "@/design-system/nightrunner";
-import { CoprimeLab, EuclidLab, MiniRsaLab, NumberSelect } from "./ModularNumberLabs";
+import {
+  BezoutCalculation,
+  CoprimeLab,
+  EuclidLab,
+  MiniRsaLab,
+  NumberSelect,
+} from "./ModularNumberLabs";
+import { CrtLab, FermatEulerLab } from "./ModularTheoremLabs";
 import { gcd, modularPower, modulo, residues } from "./modular-arithmetic";
 import "./ModularMathLab.css";
 
@@ -20,6 +27,8 @@ const experiments = [
   { id: "coprimi", label: "Coprimi e φ", Lab: CoprimeLab },
   { id: "inversi", label: "Inversi", Lab: InverseLab },
   { id: "potenze", label: "Potenze", Lab: PowerLab },
+  { id: "fermat-eulero", label: "Fermat ed Eulero", Lab: FermatEulerLab },
+  { id: "crt", label: "CRT", Lab: CrtLab },
   { id: "mini-rsa", label: "Mini-RSA", Lab: MiniRsaLab },
   { id: "diffie-hellman", label: "Diffie–Hellman", Lab: KeyExchangeLab },
 ] as const;
@@ -215,11 +224,14 @@ function ResidueClock() {
 function InverseLab() {
   const [modulus, setModulus] = useState(12);
   const [factor, setFactor] = useState(5);
-  const [multiplier, setMultiplier] = useState(2);
+  const [multiplier, setMultiplier] = useState<number | null>(2);
+  const [attempts, setAttempts] = useState<number[] | null>(null);
   const values = residues(modulus);
   const products = values.map((value) => modulo(factor * value, modulus));
-  const reached = new Set(products);
-  const selected = modulo(factor * multiplier, modulus);
+  const reached = new Set(
+    products.filter((_, value) => attempts === null || attempts.includes(value)),
+  );
+  const selected = multiplier === null ? null : modulo(factor * multiplier, modulus);
   const divisor = gcd(factor, modulus);
   const status =
     divisor > 1
@@ -227,6 +239,13 @@ function InverseLab() {
       : selected === 1
         ? `${multiplier} è l’inverso di ${factor}`
         : "Inverso possibile";
+
+  function tryExample(nextModulus: number) {
+    setModulus(nextModulus);
+    setFactor(3);
+    setMultiplier(null);
+    setAttempts([]);
+  }
 
   return (
     <section className="crypto-stage math-stage" aria-label="Inverso moltiplicativo">
@@ -236,6 +255,14 @@ function InverseLab() {
         moltiplicatore b tale che a × b lasci resto 1. Moltiplicare per 1 lascia la posizione di
         partenza, quindi passando prima per a e poi per b ritrovi il resto originale.
       </p>
+      <div className="crypto-controls" role="group" aria-label="Esempi di inverso">
+        <HudButton variant="secondary" onClick={() => tryExample(7)}>
+          Prova 3 modulo 7
+        </HudButton>
+        <HudButton variant="secondary" onClick={() => tryExample(9)}>
+          Prova 3 modulo 9
+        </HudButton>
+      </div>
       <div className="math-stage-header">
         <div className="crypto-controls math-settings">
           <NumberSelect
@@ -245,37 +272,59 @@ function InverseLab() {
             onChange={(next) => {
               setModulus(next);
               setFactor(modulo(factor, next));
-              setMultiplier(modulo(multiplier, next));
+              setMultiplier(multiplier === null ? 0 : modulo(multiplier, next));
+              setAttempts(null);
             }}
           />
-          <NumberSelect label="Fattore a" values={values} value={factor} onChange={setFactor} />
+          <NumberSelect
+            label="Fattore a"
+            values={values}
+            value={factor}
+            onChange={(next) => {
+              setFactor(next);
+              if (multiplier === null) setMultiplier(0);
+              setAttempts(null);
+            }}
+          />
         </div>
       </div>
 
       <div className="math-product-board" data-invertible={divisor === 1}>
         <p className="math-label">Scegli un moltiplicatore b per ottenere resto 1.</p>
         <div className="math-product-grid" role="group" aria-label="Prodotti modulo n">
-          {products.map((product, value) => (
-            <button
-              key={value}
-              type="button"
-              className="math-product"
-              aria-label={`Moltiplicatore ${value}, resto ${product}`}
-              aria-pressed={value === multiplier}
-              onClick={() => setMultiplier(value)}
-            >
-              <span>× {value}</span>
-              <strong>{product}</strong>
-            </button>
-          ))}
+          {products.map((product, value) => {
+            const revealed = attempts === null || attempts.includes(value);
+            return (
+              <button
+                key={value}
+                type="button"
+                className="math-product"
+                aria-label={
+                  revealed ? `Moltiplicatore ${value}, resto ${product}` : `Moltiplicatore ${value}`
+                }
+                aria-pressed={value === multiplier}
+                onClick={() => {
+                  setMultiplier(value);
+                  if (attempts !== null && !revealed) setAttempts([...attempts, value]);
+                }}
+              >
+                <span>× {value}</span>
+                <strong>{revealed ? product : "?"}</strong>
+              </button>
+            );
+          })}
         </div>
 
         <div className="math-inverse-result" aria-live="polite" aria-atomic="true">
           <div>
             <span className="math-label">Prodotto selezionato</span>
-            <strong className="math-readout">
-              ({factor} × {multiplier}) mod {modulus} = {selected}
-            </strong>
+            {multiplier === null ? (
+              <span className="math-expression">Scegli il primo tentativo.</span>
+            ) : (
+              <strong className="math-readout">
+                ({factor} × {multiplier}) mod {modulus} = {selected}
+              </strong>
+            )}
           </div>
           <div
             className="math-gcd-result"
@@ -296,7 +345,7 @@ function InverseLab() {
             {values.map((value) => (
               <li
                 key={value}
-                aria-label={`Resto ${value}, ${reached.has(value) ? "raggiunto" : "irraggiungibile"}${value === 1 ? ", obiettivo" : ""}`}
+                aria-label={`Resto ${value}, ${reached.has(value) ? "raggiunto" : attempts === null ? "irraggiungibile" : "non ancora raggiunto"}${value === 1 ? ", obiettivo" : ""}`}
                 data-reached={reached.has(value)}
                 data-current={selected === value}
                 data-target={value === 1}
@@ -310,8 +359,12 @@ function InverseLab() {
       <p className="crypto-legend">
         {divisor > 1
           ? `${divisor} divide sia ${factor} sia ${modulus}. Divide quindi ogni prodotto per ${factor} e ogni multiplo di ${modulus}, compresa la loro differenza. Tutti i resti sono multipli di ${divisor}, perciò il resto 1 è irraggiungibile.`
-          : `${factor} e ${modulus} sono coprimi. La distribuzione mostra che ogni resto è raggiunto una sola volta, compreso 1. Lo stesso criterio permetterà di scegliere l’esponente pubblico di RSA.`}
+          : `${factor} e ${modulus} sono coprimi. Provando tutti i moltiplicatori incontrerai ogni resto una sola volta, compreso 1. Lo stesso criterio permetterà di scegliere l’esponente pubblico di RSA.`}
       </p>
+      <details className="math-details">
+        <summary>Trova il moltiplicatore con Euclide esteso</summary>
+        <BezoutCalculation factor={factor} modulus={modulus} />
+      </details>
       {divisor === 1 && (
         <details className="math-details">
           <summary>Perché i resti sono tutti diversi?</summary>
@@ -438,8 +491,8 @@ function PowerLab() {
       </div>
       <p className="crypto-legend">
         Segui le frecce e confronta la formula con il punto sul grafico. Le ordinate sono sempre
-        resti da 0 a n − 1, anche quando la potenza originale cresce. In Mini-RSA userai questa
-        operazione sia per cifrare sia per decifrare.
+        resti da 0 a n − 1, anche quando la potenza originale cresce. Ora segui le potenze fino al
+        loro ritorno a 1, una proprietà che userai per capire Mini-RSA.
       </p>
     </section>
   );
@@ -463,9 +516,9 @@ function KeyExchangeLab() {
         </span>
       </div>
       <p className="math-tutorial-copy">
-        Alice e Bob vogliono ottenere lo stesso resto partendo da due esponenti privati. Ognuno
-        calcola una potenza di g modulo p e invia solo il resto. Poi usa il valore ricevuto come
-        base per una seconda potenza con il proprio esponente.
+        Alice e Bob scelgono insieme il modulo primo p e la base g. Ognuno usa il proprio esponente
+        privato per calcolare una potenza di g modulo p e invia solo il resto. Poi usa il valore
+        ricevuto come base per una seconda potenza con lo stesso esponente.
       </p>
 
       <ol className="math-exchange-stages" aria-label="Fasi dello scambio">
@@ -599,9 +652,11 @@ function KeyExchangeLab() {
         </HudButton>
       </div>
       <p className="crypto-legend">
-        Il modulo 23 rende visibili tutti i calcoli ed è solo didattico. In un protocollo reale
-        parametri adeguati rendono difficile risalire all’esponente dal valore pubblico. Dal segreto
-        condiviso si derivano poi le chiavi di traffico. Per sapere chi ha inviato i valori pubblici
+        Il piccolo teorema di Fermat dice che {generator}
+        <sup>{prime - 1}</sup> lascia resto 1 modulo {prime}. Aggiungere {prime - 1} a un esponente
+        ripete quindi il valore pubblico. I numeri qui sono didattici. Nei protocolli reali i
+        parametri rendono difficile risalire all’esponente dal valore pubblico e dal segreto
+        condiviso si derivano le chiavi di traffico. Per sapere chi ha inviato i valori pubblici
         serve anche l’autenticazione. In TLS questo controllo verifica l’identità del server.
       </p>
     </section>

@@ -35,10 +35,10 @@ const steps = [
     title: "Il browser cifra il contratto e crea la busta",
     explanation: (
       <p>
-        Il browser usa AES-GCM, una cifratura autenticata con dati associati (AEAD). La cifratura
-        protegge l’importo dalla lettura. Il <strong>tag</strong> è un valore calcolato con la
-        chiave segreta che permette al server di controllare il testo cifrato e i dati associati
-        (AAD), qui il tenant Alfa e il numero del documento.
+        AES lavora su 16 byte alla volta. In AES-GCM elabora blocchi contatore per produrre una
+        maschera lunga quanto il messaggio. Segui i blocchi qui sotto, poi osserva la busta. Oltre
+        al testo cifrato contiene il <strong>tag</strong> che servirà a verificare il testo cifrato
+        e i dati associati.
       </p>
     ),
   },
@@ -67,6 +67,20 @@ const steps = [
     ),
   },
 ] as const satisfies readonly TutorialStep[];
+
+const plainBytes = Array.from(new TextEncoder().encode(aeadEnvelope.plaintext));
+const cipherBytes = Array.from(aeadEnvelope.ciphertext.matchAll(/../g), ([byte]) =>
+  parseInt(byte, 16),
+);
+const blockSize = 16;
+// Recover the mask for this fixed teaching fixture from its known plaintext and ciphertext.
+const byteTrace = cipherBytes.map((ciphertext, index) => {
+  const plaintext = plainBytes[index];
+  if (plaintext === undefined) throw new Error("AES-GCM fixture lengths do not match");
+  return { plaintext, mask: plaintext ^ ciphertext, ciphertext };
+});
+const blockCount = Math.ceil(byteTrace.length / blockSize);
+const blockFirstBytes = Array.from({ length: blockCount }, (_, index) => index * blockSize);
 
 const nextLabels = ["Cifra il contratto", "Invia la busta", "Passa al controllo del tag"] as const;
 const packetFields = [
@@ -170,6 +184,7 @@ function PrepareContract() {
 function EncryptContract() {
   return (
     <div className="crypto-stage aead-lesson-stage">
+      <CounterMode />
       <div className="aead-lesson-flow">
         <section className="crypto-node aead-lesson-node">
           <h3>
@@ -195,30 +210,86 @@ function EncryptContract() {
           <Packet />
         </section>
       </div>
-      <div className="aead-lesson-example">
-        <h3>Segui il primo byte</h3>
-        <p>
-          AES genera una maschera usando la chiave, il nonce e un contatore che avanza per ogni
-          blocco. Qui il primo byte del contratto è la <code>C</code> (<code>43</code> in
-          esadecimale). La maschera inizia con <code>{aeadEnvelope.maskFirstByte}</code>. Il simbolo
-          ⊕ indica lo XOR, che dà 1 quando i due bit sono diversi e 0 quando sono uguali.
-        </p>
-        <pre className="crypto-readout" aria-label="Primo byte in esadecimale">
-          {`43 ⊕ ${aeadEnvelope.maskFirstByte} = ${aeadEnvelope.ciphertext.slice(0, 2)}`}
-        </pre>
-        <p>
-          Il <strong>nonce</strong> è pubblico e viaggia nella busta. Riusarlo con la stessa chiave
-          ripeterebbe la maschera e indebolirebbe la cifratura. L’AAD rimane leggibile e il tag ne
-          protegge l’integrità.
-        </p>
-      </div>
     </div>
+  );
+}
+
+function CounterMode() {
+  const [selectedBlock, setSelectedBlock] = useState(0);
+  const start = selectedBlock * blockSize;
+  const block = byteTrace.slice(start, start + blockSize);
+  const first = block[0];
+  const hex = (byte: number) => byte.toString(16).padStart(2, "0");
+  const rows = [
+    { label: "Byte del contratto", field: "plaintext" },
+    { label: "XOR con la maschera", field: "mask" },
+    { label: "Byte cifrati", field: "ciphertext" },
+  ] as const;
+
+  return (
+    <section className="aead-lesson-example aead-counter" aria-label="Blocchi contatore di AES-GCM">
+      <h3>Segui la maschera, blocco per blocco</h3>
+      <div className="crypto-controls" role="group" aria-label="Blocchi del contratto">
+        {blockFirstBytes.map((offset, index) => (
+          <Button
+            key={offset}
+            type="button"
+            size="sm"
+            variant={selectedBlock === index ? "default" : "outline"}
+            aria-pressed={selectedBlock === index}
+            onClick={() => setSelectedBlock(index)}
+          >
+            Blocco {index + 1} · {Math.min(blockSize, plainBytes.length - offset)} byte
+          </Button>
+        ))}
+      </div>
+      <div className="aead-counter-input" aria-live="polite">
+        <div>
+          <span className="crypto-label">Blocco contatore · 16 byte</span>
+          <code>
+            {aeadEnvelope.nonce}{" "}
+            <strong>{(selectedBlock + 2).toString(16).padStart(8, "0")}</strong>
+          </code>
+        </div>
+        <ArrowRight aria-hidden="true" />
+        <div>
+          <span className="crypto-label">Trasformazione</span>
+          <strong>AES con la chiave segreta</strong>
+        </div>
+      </div>
+      <div className="aead-counter-trace" aria-live="polite">
+        {rows.map(({ label, field }) => (
+          <div key={label}>
+            <span className="crypto-label">{label}</span>
+            <div className="aead-counter-bytes">
+              {block.map((byte, index) => (
+                <code key={index}>{hex(byte[field])}</code>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      {first && (
+        <pre className="crypto-readout" aria-label="Primo byte in esadecimale">
+          {`${hex(first.plaintext)} ⊕ ${hex(first.mask)} = ${hex(first.ciphertext)}`}
+        </pre>
+      )}
+      <p>
+        {block.length < blockSize
+          ? "AES produce comunque 16 byte di maschera. Al documento ne resta uno, quindi qui usi solo il primo."
+          : "I byte della maschera si combinano con quelli del contratto, uno alla volta. Al blocco successivo cambia il contatore e AES genera una maschera diversa."}
+      </p>
+      <p>
+        Il nonce viaggia nella busta. Per una nuova cifratura con la stessa chiave serve un nonce
+        diverso, così la maschera cambia. Il tag controlla anche l’AAD, che resta leggibile.
+      </p>
+    </section>
   );
 }
 
 const transferNotes = {
   original: "Arriva la busta originale e il server ricostruisce i dati associati per Alfa.",
-  ciphertext: "Il primo byte del testo cifrato cambia da d2 a d3. Tag e contesto restano identici.",
+  ciphertext: "Il primo byte del testo cifrato cambia da ce a cf. Tag e contesto restano identici.",
   aad: "La busta arriva identica. Il server ricostruisce i dati associati per Beta, quindi cambia solo il contesto della verifica.",
 } as const;
 
