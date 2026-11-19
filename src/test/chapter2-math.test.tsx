@@ -51,6 +51,58 @@ describe("Laboratorio di matematica crittografica", () => {
     expect(panel.queryByRole("button", { name: /resto 1$/ })).not.toBeInTheDocument();
   });
 
+  it("avanza dall'orologio a Euclide e rivela il MCD all'ultima divisione", () => {
+    render(<ModularMathLab />);
+    fireEvent.click(screen.getByRole("button", { name: "Vai a Euclide" }));
+    const panel = within(screen.getByRole("tabpanel", { name: "Euclide" }));
+
+    expect(panel.getByText("48 = 2 × 18 + 12")).toBeVisible();
+    expect(panel.queryByText("MCD(48, 18) = 6")).not.toBeInTheDocument();
+    fireEvent.click(panel.getByRole("button", { name: "Prossima divisione" }));
+    expect(panel.getByText("18 = 1 × 12 + 6")).toBeVisible();
+    fireEvent.click(panel.getByRole("button", { name: "Prossima divisione" }));
+    expect(panel.getByText("12 = 2 × 6 + 0")).toBeVisible();
+    expect(panel.getByText("MCD(48, 18) = 6")).toBeVisible();
+  });
+
+  it("aggiorna φ e riconosce che due numeri composti possono essere coprimi", () => {
+    render(<ModularMathLab />);
+    const panel = openTab("Coprimi e φ");
+
+    expect(panel.getByText("φ(12) = 4")).toBeVisible();
+    fireEvent.change(panel.getByLabelText("Numero n"), { target: { value: "15" } });
+    expect(panel.getByText("φ(15) = 8")).toBeVisible();
+    fireEvent.click(panel.getByRole("button", { name: "Numero 4, coprimo" }));
+    expect(panel.getByText("MCD(4, 15) = 1")).toBeVisible();
+  });
+
+  it("Mini-RSA blocca un esponente senza inverso e recupera anche un messaggio non coprimo con n", () => {
+    render(<ModularMathLab />);
+    const panel = openTab("Mini-RSA");
+    const click = (name: string) => fireEvent.click(panel.getByRole("button", { name }));
+    const change = (label: string, value: string) =>
+      fireEvent.change(panel.getByLabelText(label), { target: { value } });
+
+    change("Primo q", "5");
+    expect(panel.getByRole("button", { name: "Calcola n e φ(n)" })).toBeDisabled();
+    change("Primo q", "11");
+    click("Calcola n e φ(n)");
+    expect(panel.getByText("φ(55) = 4 × 10 = 40")).toBeVisible();
+    change("Esponente pubblico e", "10");
+    expect(panel.getByText("MCD(10, 40) = 10")).toBeVisible();
+    expect(panel.getByRole("button", { name: "Trova l’inverso d" })).toBeDisabled();
+    change("Esponente pubblico e", "3");
+    click("Trova l’inverso d");
+    expect(panel.getByText("(3 × 27) mod 40 = 1")).toBeVisible();
+    click("Scegli il messaggio");
+    change("Messaggio m", "5");
+    click("Cifra il messaggio");
+    expect(panel.getByLabelText("Cifrato c")).toHaveTextContent("mod 55 = 15");
+    expect(panel.queryByLabelText("Messaggio recuperato")).not.toBeInTheDocument();
+    click("Decifra il messaggio");
+    expect(panel.getByLabelText("Messaggio recuperato")).toHaveTextContent("m′ = 5");
+  });
+
   it("esplora i nodi della potenza, ricalcola i resti e gestisce l'esponente zero", () => {
     render(<ModularMathLab />);
     const panel = openTab("Potenze");

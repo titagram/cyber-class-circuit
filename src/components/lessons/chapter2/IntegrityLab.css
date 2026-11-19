@@ -1,0 +1,69 @@
+.crypto-integrity-stage {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.crypto-integrity-stage .crypto-integrity-messages {
+  gap: 0.6rem;
+}
+
+.crypto-integrity-operation {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.crypto-integrity-operation .crypto-integrity-method {
+  min-height: 2.75rem;
+}
+
+.crypto-integrity-values {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+  margin: 0;
+}
+
+.crypto-integrity-values dt {
+  margin-bottom: 0.25rem;
+}
+
+.crypto-integrity-pair {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  padding: 0.8rem clamp(0.65rem, 2vw, 1.2rem);
+}
+
+.crypto-integrity-note,
+.crypto-integrity-conclusion p {
+  margin: 0;
+  color: var(--nr-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.crypto-integrity-conclusion {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.crypto-integrity-conclusion strong {
+  color: var(--nr-text);
+}
+
+@media (max-width: 730px) {
+  .crypto-integrity-operation {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.45rem;
+  }
+
+  .crypto-integrity-operation .crypto-integrity-arrow {
+    margin-inline: 0.9rem auto;
+    rotate: 90deg;
+  }
+
+  .crypto-integrity-operation .crypto-integrity-method {
+    justify-self: start;
+  }
+}

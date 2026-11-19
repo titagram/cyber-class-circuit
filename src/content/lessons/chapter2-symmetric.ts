@@ -1,8 +1,9 @@
-// Precomputed AES-128-GCM fixture for an invented contract. The key stays out of the UI.
+// Precomputed AES-128-GCM examples for the fictional contract and a test-only key.
 export const aeadEnvelope = {
   nonce: "f3b2c8818e9501b42ade064d",
-  ciphertext: "d2618fd087791aaa5608353cc3c78c3f06df6832cb3de9648be227b6a7b46b0b3f",
-  tag: "32ab02c6b0b5671ea644028d678e3741",
+  ciphertext: "ce604ce234164db39362b1a89368c525ecb380c59ef04b3cd7b54f8870fb2c4a83",
+  tag: "bcef02dd6e49db6be38e022bb118c3c1",
+  maskFirstByte: "8d",
   aad: "tenant=alfa&documento=42",
   plaintext: "Contratto 42\nImporto: EUR 125.000",
 } as const;
@@ -13,15 +14,15 @@ export const aeadCases = [
     label: "Messaggio originale",
     receivedCiphertext: aeadEnvelope.ciphertext,
     serverAad: aeadEnvelope.aad,
-    accepted: true,
+    expectedTag: aeadEnvelope.tag,
     explanation: "Il tag è valido per il ciphertext e per l’AAD attesa dal server.",
   },
   {
     id: "ciphertext",
     label: "Ciphertext alterato",
-    receivedCiphertext: `d3${aeadEnvelope.ciphertext.slice(2)}`,
+    receivedCiphertext: `cf${aeadEnvelope.ciphertext.slice(2)}`,
     serverAad: aeadEnvelope.aad,
-    accepted: false,
+    expectedTag: "2904427fc2a5a7e66b1b3cf53c7c9c07",
     explanation: "È cambiato un bit del ciphertext. Il controllo del tag fallisce.",
   },
   {
@@ -29,7 +30,7 @@ export const aeadCases = [
     label: "AAD del tenant errato",
     receivedCiphertext: aeadEnvelope.ciphertext,
     serverAad: "tenant=beta&documento=42",
-    accepted: false,
+    expectedTag: "152ba94433e06b3bce8c888f284266db",
     explanation:
       "Il server verifica la busta nel contesto di Beta. Il tag era legato al tenant Alfa.",
   },

@@ -1,0 +1,234 @@
+.crypto-stage.aead-lesson-stage {
+  container-type: inline-size;
+  padding: 0;
+}
+
+.aead-lesson-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(1.5rem, 0.14fr) minmax(0, 1fr);
+  padding: clamp(0.65rem, 2vw, 1.2rem);
+}
+
+.aead-lesson-flow[data-nodes="3"] {
+  grid-template-columns:
+    minmax(0, 1fr) minmax(1.5rem, 0.14fr) minmax(0, 0.85fr) minmax(1.5rem, 0.14fr)
+    minmax(0, 1fr);
+}
+
+.aead-lesson-node {
+  display: grid;
+  align-content: start;
+  gap: 0.65rem;
+  padding: clamp(0.65rem, 1.65vw, 1rem);
+}
+
+.aead-lesson-node h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  color: var(--crypto-node-signal, var(--nr-cyan));
+  font: 700 0.92rem / 1.25 var(--nr-display-font);
+  overflow-wrap: anywhere;
+}
+
+.aead-lesson-node h3 svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: none;
+  stroke-width: 1.65;
+}
+
+.aead-lesson-copy,
+.aead-lesson-key,
+.aead-lesson-note,
+.aead-lesson-result p {
+  margin: 0;
+  color: var(--nr-text);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.aead-lesson-key {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--nr-muted);
+}
+
+.aead-lesson-key svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: none;
+  color: var(--nr-yellow);
+}
+
+.aead-lesson-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: clamp(0.65rem, 2vw, 1.2rem);
+  padding-bottom: 0;
+}
+
+.aead-lesson-controls button {
+  max-width: 100%;
+  height: auto;
+  min-height: 2.1rem;
+  padding-block: 0.3rem;
+  white-space: normal;
+}
+
+.aead-lesson-fields {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+}
+
+.aead-lesson-fields > div,
+.aead-lesson-aad {
+  display: grid;
+  gap: 0.16rem;
+  min-width: 0;
+  border: 1px solid var(--nr-border);
+  padding: 0.35rem 0.5rem;
+  background: var(--nr-panel-end);
+}
+
+.aead-lesson-aad {
+  border-style: dashed;
+}
+
+.aead-lesson-fields dd {
+  margin: 0;
+}
+
+.aead-lesson-fields dt,
+.aead-lesson-aad > span {
+  color: var(--nr-muted);
+  font: 700 0.77rem / 1.2 var(--nr-display-font);
+}
+
+.aead-lesson-fields code,
+.aead-lesson-aad code {
+  display: block;
+  color: var(--nr-text);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.aead-lesson-stage [data-changed="true"] {
+  border-color: var(--nr-yellow);
+  background: color-mix(in srgb, var(--nr-yellow) 8%, var(--nr-panel-end));
+}
+
+.aead-lesson-note {
+  border-top: 1px solid var(--nr-border);
+  padding: 0.65rem clamp(0.65rem, 2vw, 1.2rem);
+}
+
+.aead-lesson-example {
+  display: grid;
+  gap: 0.5rem;
+  border-top: 1px solid var(--nr-border);
+  padding: 0.75rem clamp(0.65rem, 2vw, 1.2rem);
+  background: var(--nr-panel);
+}
+
+.aead-lesson-example h3 {
+  margin: 0;
+  color: var(--nr-cyan);
+  font: 700 0.92rem / 1.25 var(--nr-display-font);
+}
+
+.aead-lesson-example p {
+  margin: 0;
+  max-width: 80ch;
+  color: var(--nr-text);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.aead-lesson-example pre {
+  width: fit-content;
+  color: var(--nr-cyan);
+  font-size: 0.9rem;
+}
+
+.aead-lesson-link {
+  position: relative;
+  display: grid;
+  align-items: center;
+  justify-items: end;
+  color: var(--nr-cyan);
+}
+
+.aead-lesson-link::before {
+  position: absolute;
+  inset-inline: 0;
+  border-top: 1px solid currentColor;
+  content: "";
+}
+
+.aead-lesson-link svg {
+  position: relative;
+  width: 1rem;
+  height: 1rem;
+  background: var(--nr-panel-end);
+}
+
+.aead-lesson-link[data-state="waiting"] {
+  color: var(--nr-muted);
+}
+
+.aead-lesson-link[data-state="blocked"] {
+  justify-items: center;
+  color: var(--nr-coral);
+}
+
+.aead-lesson-link:is([data-state="waiting"], [data-state="blocked"])::before {
+  border-top-style: dashed;
+}
+
+.aead-lesson-result {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.aead-lesson-result p.crypto-status {
+  color: var(--crypto-node-signal, var(--nr-cyan));
+  font: 700 0.78rem / 1.15 var(--nr-display-font);
+}
+
+@container (max-width: 37rem) {
+  .aead-lesson-flow,
+  .aead-lesson-flow[data-nodes="3"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aead-lesson-link {
+    min-height: 1.5rem;
+    align-items: end;
+    justify-items: center;
+  }
+
+  .aead-lesson-link::before {
+    inset-block: 0;
+    inset-inline: 50% auto;
+    border-top: 0;
+    border-right: 1px solid currentColor;
+  }
+
+  .aead-lesson-link:is([data-state="waiting"], [data-state="blocked"])::before {
+    border-right-style: dashed;
+  }
+
+  .aead-lesson-link svg {
+    transform: rotate(90deg);
+  }
+
+  .aead-lesson-link[data-state="blocked"] {
+    align-items: center;
+  }
+}

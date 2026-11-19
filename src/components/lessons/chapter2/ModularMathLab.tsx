@@ -1,16 +1,9 @@
-import { useId, useState, type CSSProperties } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ChartNoAxesColumnIncreasing,
-  Clock3,
-  LockKeyhole,
-  Repeat2,
-  ScanLine,
-  UnlockKeyhole,
-} from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { ArrowLeft, ArrowRight, LockKeyhole, ScanLine, UnlockKeyhole } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { HudButton, HudTextField } from "@/design-system/nightrunner";
+import { CoprimeLab, EuclidLab, MiniRsaLab, NumberSelect } from "./ModularNumberLabs";
+import { gcd, modularPower, modulo, residues } from "./modular-arithmetic";
 import "./ModularMathLab.css";
 
 const moduli = Array.from({ length: 11 }, (_, index) => index + 2);
@@ -21,66 +14,71 @@ const generator = 5;
 const privateExponents = Array.from({ length: prime - 3 }, (_, index) => index + 2);
 const exchangeStages = ["Prepara", "Scambia", "Deriva"];
 
-function residues(modulus: number) {
-  return Array.from({ length: modulus }, (_, value) => value);
-}
-
-function modulo(number: number, modulus: number) {
-  const remainder = number % modulus;
-  return remainder < 0 ? remainder + modulus : remainder || 0;
-}
-
-function gcd(a: number, b: number) {
-  while (b !== 0) {
-    [a, b] = [b, a % b];
-  }
-
-  return a;
-}
-
-function modularPower(base: number, exponent: number, modulus: number) {
-  const initial = { power: 0, previous: 1, residue: 1 };
-  const trace = [initial];
-  let result = initial.residue;
-
-  for (let power = 1; power <= exponent; power++) {
-    const previous = result;
-    result = modulo(previous * base, modulus);
-    trace.push({ power, previous, residue: result });
-  }
-
-  return { initial, trace, result };
-}
+const experiments = [
+  { id: "resti", label: "Resti", Lab: ResidueClock },
+  { id: "euclide", label: "Euclide", Lab: EuclidLab },
+  { id: "coprimi", label: "Coprimi e φ", Lab: CoprimeLab },
+  { id: "inversi", label: "Inversi", Lab: InverseLab },
+  { id: "potenze", label: "Potenze", Lab: PowerLab },
+  { id: "mini-rsa", label: "Mini-RSA", Lab: MiniRsaLab },
+  { id: "diffie-hellman", label: "Diffie–Hellman", Lab: KeyExchangeLab },
+] as const;
 
 export function ModularMathLab() {
+  const [active, setActive] = useState<string>(experiments[0].id);
+  const activePanel = useRef<HTMLDivElement>(null);
+  const focusPanel = useRef(false);
+  const current = experiments.findIndex(({ id }) => id === active);
+  const previous = experiments[current - 1];
+  const next = experiments[current + 1];
+
+  useEffect(() => {
+    if (focusPanel.current) {
+      activePanel.current?.focus();
+      focusPanel.current = false;
+    }
+  }, [active]);
+
+  function goTo(id: string) {
+    focusPanel.current = true;
+    setActive(id);
+  }
+
   return (
-    <Tabs defaultValue="resti" className="modular-math-lab">
+    <Tabs value={active} onValueChange={setActive} className="modular-math-lab">
       <TabsList className="math-tabs" aria-label="Esperimenti di algebra modulare">
-        <TabsTrigger value="resti">
-          <Clock3 aria-hidden="true" /> Resti
-        </TabsTrigger>
-        <TabsTrigger value="inversi">
-          <Repeat2 aria-hidden="true" /> Inversi
-        </TabsTrigger>
-        <TabsTrigger value="potenze">
-          <ChartNoAxesColumnIncreasing aria-hidden="true" /> Potenze
-        </TabsTrigger>
-        <TabsTrigger value="diffie-hellman">
-          <LockKeyhole aria-hidden="true" /> Diffie–Hellman
-        </TabsTrigger>
+        {experiments.map(({ id, label }, index) => (
+          <TabsTrigger value={id} key={id}>
+            <span className="math-tab-number" aria-hidden="true">
+              {index + 1}
+            </span>
+            {label}
+          </TabsTrigger>
+        ))}
       </TabsList>
-      <TabsContent forceMount value="resti" className="math-tab-panel">
-        <ResidueClock />
-      </TabsContent>
-      <TabsContent forceMount value="inversi" className="math-tab-panel">
-        <InverseLab />
-      </TabsContent>
-      <TabsContent forceMount value="potenze" className="math-tab-panel">
-        <PowerLab />
-      </TabsContent>
-      <TabsContent forceMount value="diffie-hellman" className="math-tab-panel">
-        <KeyExchangeLab />
-      </TabsContent>
+      {experiments.map(({ id, Lab }) => (
+        <TabsContent
+          forceMount
+          value={id}
+          key={id}
+          className="math-tab-panel"
+          ref={id === active ? activePanel : undefined}
+        >
+          <Lab />
+        </TabsContent>
+      ))}
+      <nav className="math-path-actions" aria-label="Percorso degli esperimenti">
+        {previous && (
+          <HudButton variant="secondary" onClick={() => goTo(previous.id)}>
+            <ArrowLeft aria-hidden="true" /> Torna a {previous.label}
+          </HudButton>
+        )}
+        {next && (
+          <HudButton onClick={() => goTo(next.id)}>
+            Vai a {next.label} <ArrowRight aria-hidden="true" />
+          </HudButton>
+        )}
+      </nav>
     </Tabs>
   );
 }
@@ -115,6 +113,11 @@ function ResidueClock() {
   return (
     <section className="crypto-stage math-stage" aria-label="L’orologio dei resti">
       <h2 className="crypto-stage-label">L’orologio dei resti</h2>
+      <p className="math-tutorial-copy">
+        Dividi un intero per il modulo n. Il resto è la posizione raggiunta dopo aver tolto i giri
+        completi, sempre tra 0 e n − 1. Con n = 12, il numero 17 compie un giro e arriva a 5,
+        proprio come le ore 17 su un orologio a 12 ore.
+      </p>
       <div className="math-clock-layout">
         <div className="math-clock" role="group" aria-label={`Quadrante modulo ${modulus}`}>
           <div className="math-clock-ring" aria-hidden="true" />
@@ -201,8 +204,9 @@ function ResidueClock() {
         </div>
       </div>
       <p className="crypto-legend">
-        Fai un giro completo. Il numero cambia, il resto rimane lo stesso. Questi numeri sono
-        congruenti.
+        Fai un giro completo oppure prova −1. Due numeri sono congruenti modulo n quando
+        differiscono per un multiplo di n e quindi occupano la stessa posizione. Nel prossimo
+        esperimento userai il resto per trovare i divisori comuni di due numeri.
       </p>
     </section>
   );
@@ -226,8 +230,13 @@ function InverseLab() {
 
   return (
     <section className="crypto-stage math-stage" aria-label="Inverso moltiplicativo">
+      <h2 className="crypto-stage-label">Inverso moltiplicativo</h2>
+      <p className="math-tutorial-copy">
+        Moltiplicare per a sposta ciascun resto su un altro resto. Per annullare l’effetto, cerca un
+        moltiplicatore b tale che a × b lasci resto 1. Moltiplicare per 1 lascia la posizione di
+        partenza, quindi passando prima per a e poi per b ritrovi il resto originale.
+      </p>
       <div className="math-stage-header">
-        <h2 className="crypto-stage-label">Inverso moltiplicativo</h2>
         <div className="crypto-controls math-settings">
           <NumberSelect
             label="Modulo"
@@ -299,9 +308,21 @@ function InverseLab() {
         </div>
       </div>
       <p className="crypto-legend">
-        <code>a</code> è un’unità, cioè è invertibile modulo <code>n</code>, esattamente quando{" "}
-        <code>MCD(a, n) = 1</code>.
+        {divisor > 1
+          ? `${divisor} divide sia ${factor} sia ${modulus}. Divide quindi ogni prodotto per ${factor} e ogni multiplo di ${modulus}, compresa la loro differenza. Tutti i resti sono multipli di ${divisor}, perciò il resto 1 è irraggiungibile.`
+          : `${factor} e ${modulus} sono coprimi. La distribuzione mostra che ogni resto è raggiunto una sola volta, compreso 1. Lo stesso criterio permetterà di scegliere l’esponente pubblico di RSA.`}
       </p>
+      {divisor === 1 && (
+        <details className="math-details">
+          <summary>Perché i resti sono tutti diversi?</summary>
+          <p className="math-tutorial-copy">
+            Se due prodotti hanno lo stesso resto, la loro differenza a × (b₁ − b₂) è multipla di n.
+            Poiché a e n sono coprimi, tutti i fattori primi di n devono venire da b₁ − b₂. Quella
+            differenza è quindi un multiplo di n. Fra 0 e n − 1 questo accade solo se i due
+            moltiplicatori sono uguali.
+          </p>
+        </details>
+      )}
     </section>
   );
 }
@@ -320,8 +341,13 @@ function PowerLab() {
 
   return (
     <section className="crypto-stage math-stage" aria-label="Potenze modulo n">
+      <h2 className="crypto-stage-label">Potenze modulo n</h2>
+      <p className="math-tutorial-copy">
+        Parti da 1, che è il valore della potenza con esponente 0. Per ogni passo, moltiplica il
+        resto precedente per la base e calcola il nuovo resto. Puoi ridurre a ogni passo perché
+        sostituire un numero con il suo resto cambia il prodotto solo di un multiplo di n.
+      </p>
       <div className="math-stage-header">
-        <h2 className="crypto-stage-label">Potenze modulo n</h2>
         <div
           className="crypto-controls math-settings math-power-settings"
           role="group"
@@ -411,8 +437,9 @@ function PowerLab() {
         </div>
       </div>
       <p className="crypto-legend">
-        Seleziona un punto o usa le frecce. Per ogni nuovo esponente, moltiplica il resto precedente
-        per la base e riduci di nuovo.
+        Segui le frecce e confronta la formula con il punto sul grafico. Le ordinate sono sempre
+        resti da 0 a n − 1, anche quando la potenza originale cresce. In Mini-RSA userai questa
+        operazione sia per cifrare sia per decifrare.
       </p>
     </section>
   );
@@ -435,6 +462,11 @@ function KeyExchangeLab() {
           Parametri pubblici <strong>p = {prime}</strong> <strong>g = {generator}</strong>
         </span>
       </div>
+      <p className="math-tutorial-copy">
+        Alice e Bob vogliono ottenere lo stesso resto partendo da due esponenti privati. Ognuno
+        calcola una potenza di g modulo p e invia solo il resto. Poi usa il valore ricevuto come
+        base per una seconda potenza con il proprio esponente.
+      </p>
 
       <ol className="math-exchange-stages" aria-label="Fasi dello scambio">
         {exchangeStages.map((label, index) => (
@@ -534,7 +566,9 @@ function KeyExchangeLab() {
         aria-atomic="true"
         data-derived={stage === 2}
       >
-        {stage === 0 && <span>Scegli gli esponenti privati, poi fai partire lo scambio.</span>}
+        {stage === 0 && (
+          <span>Scegli a per Alice e b per Bob. Leggi le due potenze e invia i resti A e B.</span>
+        )}
         {stage === 1 && <span>Alice riceve B. Bob riceve A. Gli esponenti restano locali.</span>}
         {stage === 2 && (
           <>
@@ -543,7 +577,9 @@ function KeyExchangeLab() {
               {`Segreto condiviso = ${aliceSecret}`}
             </strong>
             <span className="math-expression">
-              Entrambi ottengono g<sup>a × b</sup> mod p.
+              Alice eleva B ad a e Bob eleva A a b. Elevare una potenza a un’altra potenza
+              moltiplica gli esponenti. Poiché a × b = b × a, entrambi ottengono g<sup>a × b</sup>{" "}
+              mod p.
             </span>
           </>
         )}
@@ -563,43 +599,11 @@ function KeyExchangeLab() {
         </HudButton>
       </div>
       <p className="crypto-legend">
-        Il modulo 23 è didattico. Nei protocolli reali le chiavi di traffico si derivano dal segreto
-        condiviso.
+        Il modulo 23 rende visibili tutti i calcoli ed è solo didattico. In un protocollo reale
+        parametri adeguati rendono difficile risalire all’esponente dal valore pubblico. Dal segreto
+        condiviso si derivano poi le chiavi di traffico. Per sapere chi ha inviato i valori pubblici
+        serve anche l’autenticazione. In TLS questo controllo verifica l’identità del server.
       </p>
     </section>
-  );
-}
-
-function NumberSelect({
-  label,
-  values,
-  value,
-  onChange,
-}: {
-  label: string;
-  values: readonly number[];
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  const id = useId();
-
-  return (
-    <div className="nr-field">
-      <label className="nr-label" htmlFor={id}>
-        {label}
-      </label>
-      <select
-        id={id}
-        className="nr-input"
-        value={value}
-        onChange={(event) => onChange(Number(event.currentTarget.value))}
-      >
-        {values.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </div>
   );
 }

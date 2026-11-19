@@ -1,0 +1,121 @@
+.crypto-tutorial {
+  display: grid;
+  min-width: 0;
+  gap: 0.9rem;
+}
+
+.crypto-tutorial-progress {
+  display: grid;
+  gap: 0.32rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.crypto-tutorial-progress li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.42rem;
+  border-bottom: 2px solid var(--nr-border);
+  padding: 0.34rem 0.4rem;
+  color: var(--nr-muted);
+  font: 700 0.84rem / 1.15 var(--nr-display-font);
+  overflow-wrap: anywhere;
+}
+
+.crypto-tutorial-progress li[data-past] {
+  border-color: var(--nr-cyan);
+  color: var(--nr-cyan);
+}
+
+.crypto-tutorial-progress li[aria-current="step"] {
+  border-color: var(--nr-yellow);
+  background: color-mix(in srgb, var(--nr-yellow) 8%, var(--nr-panel));
+  color: var(--nr-yellow);
+}
+
+.crypto-tutorial-index {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  place-items: center;
+  border: 1px solid currentColor;
+}
+
+.crypto-tutorial-index svg {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+.crypto-tutorial-intro {
+  border-left: 2px solid var(--nr-cyan);
+  padding: 0.8rem 1rem;
+  background: var(--nr-panel);
+}
+
+.crypto-tutorial-intro h2 {
+  margin: 0 0 0.35rem;
+  color: var(--nr-text);
+  font: 700 clamp(1.16rem, 2.25vw, 1.55rem) / 1.2 var(--nr-display-font);
+  scroll-margin-top: 5rem;
+}
+
+.crypto-tutorial-intro h2:focus {
+  outline: none;
+}
+
+.crypto-tutorial-explanation {
+  max-width: 86ch;
+  color: var(--nr-text);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.crypto-tutorial-explanation p {
+  margin: 0;
+}
+
+.crypto-tutorial-explanation p + p {
+  margin-top: 0.45rem;
+}
+
+.crypto-tutorial-explanation strong {
+  color: var(--nr-cyan);
+}
+
+.crypto-tutorial-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.crypto-tutorial-actions:empty {
+  display: none;
+}
+
+.crypto-tutorial-actions button {
+  height: auto;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.crypto-tutorial-next {
+  margin-inline-start: auto;
+}
+
+@media (max-width: 500px) {
+  .crypto-tutorial-progress li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+    padding-inline: 0.25rem;
+    font-size: 0.73rem;
+  }
+
+  .crypto-tutorial-intro {
+    padding-inline: 0.69rem;
+  }
+}

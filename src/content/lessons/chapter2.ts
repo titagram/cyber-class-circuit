@@ -8,7 +8,7 @@ type CryptoLesson = {
 export const chapter2 = {
   "cybersecurity-2-1": {
     title: "2.1 — Cifratura autenticata",
-    question: "Quando il backend può restituire il contratto in chiaro?",
+    question: "Come fa il server a capire se può aprire il contratto cifrato?",
     takeaway:
       "AES-GCM cifra il contenuto e verifica anche i dati associati. Le informazioni associate restano leggibili. Per ogni nuova cifratura usa un nonce distinto con la stessa chiave.",
     reference: {
@@ -25,9 +25,9 @@ export const chapter2 = {
   },
   "cybersecurity-2-3": {
     title: "2.3 — Laboratorio di matematica crittografica",
-    question: "Come fanno due persone a ottenere lo stesso segreto senza trasmetterlo?",
+    question: "Come si passa dai conti con i resti alle chiavi crittografiche?",
     takeaway:
-      "Diffie–Hellman produce un segreto condiviso da cui si possono derivare chiavi. Un protocollo come TLS aggiunge la verifica dell’identità del servizio.",
+      "Il massimo comune divisore dice se esiste un inverso. Mini-RSA usa quell’inverso per legare gli esponenti delle due chiavi. Diffie–Hellman usa invece le potenze modulari per ottenere un segreto condiviso.",
     reference: {
       label: "NIST SP 800-56A · Accordo di chiave",
       href: "https://csrc.nist.gov/pubs/sp/800/56/a/r3/final",
