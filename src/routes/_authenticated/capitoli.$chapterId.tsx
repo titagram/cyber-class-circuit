@@ -13,12 +13,12 @@ export const Route = createFileRoute("/_authenticated/capitoli/$chapterId")({
       { title: "Capitolo interattivo — Cybersecurity 101" },
       {
         name: "description",
-        content: "Capitolo interattivo del corso Cybersecurity per sviluppatori.",
+        content: "Capitolo interattivo del corso Crittografia 101.",
       },
       { property: "og:title", content: "Capitolo interattivo — Cybersecurity 101" },
       {
         property: "og:description",
-        content: "Capitolo interattivo del corso Cybersecurity per sviluppatori.",
+        content: "Capitolo interattivo del corso Crittografia 101.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
