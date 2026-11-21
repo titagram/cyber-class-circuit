@@ -1,195 +1,172 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, MapPin, RotateCcw, ShieldCheck, Workflow } from "lucide-react";
+import { useState } from "react";
+import { ArrowDown, FileText } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
-import { DataFlowExplorer } from "@/components/data-flow/DataFlowExplorer";
-import { HudButton, HudNotice, HudPanel, HudTabPanel, HudTabs } from "@/design-system/nightrunner";
-import { architecture } from "@/content/lessons/cybersecurity-1-3";
+import { HudPanel } from "@/design-system/nightrunner";
 import {
-  attackPerspectives,
-  attackSurfaceLesson,
-  surfaceScenarios,
-  type PerspectiveId,
-  type ScenarioId,
+  layers,
+  surfaces,
+  viewpoints,
+  type SurfaceId,
+  type Viewpoint,
 } from "@/content/lessons/cybersecurity-1-4";
+import "./WebSecurityLessons.css";
 
-import "./DataFlowLessons.css";
-
-const tabsId = "cybersecurity-1-4-perspectives";
-const tabs = Object.entries(attackPerspectives).map(([value, { label }]) => ({ value, label }));
-const scenarios = Object.entries(surfaceScenarios) as [
-  ScenarioId,
-  (typeof surfaceScenarios)[ScenarioId],
-][];
-const phases = [
-  { label: "Accesso ipotizzato", icon: MapPin },
-  { label: "Percorso e confine", icon: Workflow },
-  { label: "Controllo ed esito", icon: ShieldCheck },
-] as const;
-const advanceLabels = ["Segui il percorso", "Verifica il controllo", "Ricomincia"] as const;
+const defaults: Record<(typeof layers)[number], SurfaceId> = {
+  "Rete pubblica": "edge",
+  "Funzioni web": "login",
+  "Servizi interni": "redis",
+};
+const surfaceIds = Object.keys(surfaces) as SurfaceId[];
+const firstView: Record<Viewpoint, SurfaceId> = { visitor: "edge", user: "read", service: "redis" };
 
 export function Cybersecurity14Slide() {
-  const [selection, setSelection] = useState<{ id: ScenarioId; phase: number }>({
-    id: "browser",
-    phase: 0,
-  });
-  const heading = useRef<HTMLHeadingElement>(null);
-  const focusFromMap = useRef(false);
-  const { id, phase } = selection;
-  const scenario = surfaceScenarios[id];
-  const focusNodeIds = useMemo(
-    () => (phase === 0 ? [scenario.focus] : [scenario.start, scenario.focus]),
-    [phase, scenario],
+  const [view, setView] = useState<Viewpoint>("visitor");
+  const [selected, select] = useState<SurfaceId>("edge");
+  const [upload, setUpload] = useState(false);
+  const [answer, setAnswer] = useState("");
+  const item = surfaces[selected];
+  const reach =
+    view === "service"
+      ? ["Percorso utente", "Eseguito qui", "Raggiungibile"]
+      : ["Raggiungibile", "Raggiungibile", "Solo dal backend"];
+  const choices = surfaceIds.filter(
+    (id) => surfaces[id].layer === item.layer && (upload || id !== "upload"),
   );
-  const choices = scenarios.filter(([, option]) => option.perspective === scenario.perspective);
-  const highlight =
-    phase === 0
-      ? { nodes: [scenario.start] }
-      : phase === 2
-        ? { ...scenario.highlight, nodes: [scenario.focus] }
-        : scenario.highlight;
-
-  useEffect(() => {
-    if (focusFromMap.current) {
-      focusFromMap.current = false;
-      heading.current?.focus();
-    }
-  }, [selection]);
-
-  function selectScenario(nextId: ScenarioId) {
-    setSelection({ id: nextId, phase: 0 });
+  function toggleUpload() {
+    setUpload(!upload);
+    select(upload ? "read" : "upload");
+    setAnswer("");
   }
-
   return (
-    <article className="max-w-[1180px]">
-      <PageHeader title={attackSurfaceLesson.title} subtitle={attackSurfaceLesson.subtitle} />
-      <HudPanel heading="Segui un tentativo di accesso" className="min-w-0 space-y-4">
-        <p className="text-muted-foreground">
-          Una superficie di attacco comprende i punti in cui una persona o un servizio può
-          interagire con il gestionale o i suoi dati. Seleziona un’icona sulla mappa o scegli una
-          prospettiva. Poi segui il tentativo e il controllo che protegge il contratto.
+    <article className="web-lesson">
+      <PageHeader
+        title="1.4 — Superfici di attacco e confini di fiducia"
+        subtitle="Da dove puoi interagire con la webapp? Cambia punto di vista e segui l’ingresso fino a chi decide."
+      />
+      <HudPanel heading="La superficie di attacco della webapp">
+        <p>
+          Ogni interfaccia che accetta una connessione, un comando o dei dati offre un punto di
+          interazione. Gli anelli mostrano dove si trovano questi ingressi e da chi sono
+          raggiungibili.
         </p>
-        <HudTabs
-          id={tabsId}
-          className="flow-lesson-tabs flex-wrap"
-          label="Prospettive sulla superficie di attacco"
-          items={tabs}
-          value={scenario.perspective}
-          onValueChange={(value) =>
-            selectScenario(attackPerspectives[value as PerspectiveId].first)
-          }
-        />
-        {tabs.map(({ value }) => (
-          <HudTabPanel key={value} tabsId={tabsId} value={value} activeValue={scenario.perspective}>
-            {value === scenario.perspective && (
-              <div className="surface-story">
-                <div className="surface-story-heading">
-                  <h3 ref={heading} tabIndex={-1}>
-                    {scenario.label}
-                  </h3>
-                  {choices.length > 1 && (
-                    <label className="surface-picker">
-                      Componente
-                      <select
-                        value={id}
-                        onChange={(event) =>
-                          selectScenario(event.currentTarget.value as ScenarioId)
-                        }
-                      >
-                        {choices.map(([key, option]) => (
-                          <option key={key} value={key}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                </div>
-                <ol className="surface-phases" aria-label="Passi del percorso">
-                  {phases.map(({ label, icon: Icon }, index) => (
-                    <li key={label}>
-                      <button
-                        type="button"
-                        aria-current={index === phase ? "step" : undefined}
-                        onClick={() => setSelection({ id, phase: index })}
-                      >
-                        <Icon aria-hidden="true" />
-                        <span>
-                          {index + 1}. {label}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ol>
-                <div className="surface-scene" aria-live="polite">
-                  {phase === 0 && (
-                    <div>
-                      <h4>Accesso ipotizzato</h4>
-                      <p>{scenario.access}</p>
-                    </div>
-                  )}
-                  {phase === 1 && (
-                    <div>
-                      <h4>{scenario.path}</h4>
-                      <p className="surface-boundary">Confine · {scenario.boundary}</p>
-                      <p>{scenario.crossing}</p>
-                    </div>
-                  )}
-                  {phase === 2 && (
-                    <>
-                      <div>
-                        <h4>Controllo da verificare</h4>
-                        <p>{scenario.control}</p>
-                      </div>
-                      <div className="surface-outcome">
-                        <h4>
-                          <ShieldCheck aria-hidden="true" /> {scenario.outcome}
-                        </h4>
-                        <p>
-                          <strong>Rischio senza il controllo.</strong> {scenario.impact}
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
-                <div className="surface-story-actions">
-                  <HudButton
-                    onClick={() => setSelection({ id, phase: (phase + 1) % phases.length })}
-                  >
-                    {advanceLabels[phase]}
-                    {phase === 2 ? (
-                      <RotateCcw aria-hidden="true" />
-                    ) : (
-                      <ArrowRight aria-hidden="true" />
-                    )}
-                  </HudButton>
-                </div>
+        <div className="web-options" role="group" aria-label="Punto di vista">
+          {(Object.keys(viewpoints) as Viewpoint[]).map((v) => (
+            <button
+              key={v}
+              aria-pressed={view === v}
+              onClick={() => {
+                setView(v);
+                select(firstView[v]);
+              }}
+            >
+              {viewpoints[v]}
+            </button>
+          ))}
+        </div>
+        <div className="web-split">
+          <figure className="web-map">
+            <div className="onion">
+              {layers.map((name, i) => (
+                <button
+                  key={name}
+                  className={"ring ring-" + i}
+                  data-reachable={reach[i] === "Raggiungibile"}
+                  aria-label={name}
+                  aria-pressed={item.layer === i}
+                  onClick={() => select(defaults[name])}
+                >
+                  <span>
+                    {name}
+                    <small>{reach[i]}</small>
+                  </span>
+                </button>
+              ))}
+              <FileText className="onion-file" aria-hidden="true" />
+            </div>
+            <figcaption>
+              {view === "service"
+                ? "Dal backend sono visibili le interfacce private."
+                : "Dal browser si entra dal proxy. Il backend contatta i servizi privati."}
+            </figcaption>
+          </figure>
+          <section className="web-detail" aria-label="Interfaccia selezionata">
+            <small>
+              Anello {item.layer + 1} di 3 · {layers[item.layer]}
+            </small>
+            <div className="web-options" role="group" aria-label="Ingressi dell’anello">
+              {choices.map((id) => (
+                <button key={id} aria-pressed={id === selected} onClick={() => select(id)}>
+                  {surfaces[id].label}
+                </button>
+              ))}
+            </div>
+            <div key={selected + view} className="web-reveal" aria-live="polite">
+              <h3>{item.label}</h3>
+              <code>{item.input}</code>
+              <div className="web-receiver">
+                <ArrowDown aria-hidden="true" /> {item.receiver}
               </div>
-            )}
-          </HudTabPanel>
-        ))}
-        <DataFlowExplorer
-          className="surface-map"
-          config={architecture}
-          level={3}
-          highlight={highlight}
-          focusNodeIds={focusNodeIds}
-          nodeSelection={{
-            id: id === "network" ? null : scenario.focus,
-            onChange: (nodeId) => {
-              const match = scenarios.find(([key]) => key === nodeId);
-              if (match) {
-                focusFromMap.current = true;
-                selectScenario(match[0]);
-              }
-            },
-          }}
-          showTrustBoundaries
-        />
-        <HudNotice>
-          Al confine di fiducia cambiano le regole di accesso. Un utente può entrare nel gestionale
-          e avere comunque bisogno di un permesso sul singolo contratto. Un servizio interno può
-          raggiungere un archivio e avere comunque bisogno di un permesso sui dati che custodisce.
-        </HudNotice>
+              <p>{item.observation[view]}</p>
+              <small>Confine di fiducia</small>
+              <p>{item.boundary}</p>
+            </div>
+          </section>
+        </div>
+      </HudPanel>
+      <HudPanel heading="Una funzione in più, la stessa porta">
+        <p>
+          Il gestionale permette di aprire un file. Abilita il caricamento e osserva quale anello
+          acquista un nuovo ingresso.
+        </p>
+        <div className="web-options">
+          <button aria-pressed={upload} onClick={toggleUpload}>
+            {upload ? "Disattiva caricamento" : "Attiva caricamento"}
+          </button>
+        </div>
+        <figure className="web-fan" aria-label="Operazioni sullo stesso ingresso HTTPS">
+          <code>HTTPS · 443</code>
+          <ul>
+            <li>POST /login</li>
+            <li>GET /api/files/42</li>
+            {upload && <li className="web-reveal">POST /api/files · caricamento</li>}
+          </ul>
+        </figure>
+        {upload && (
+          <div>
+            <p>Dove è cresciuta la superficie?</p>
+            <div className="web-options">
+              {["Sulla porta di rete", "Nelle funzioni web"].map((a) => (
+                <button key={a} aria-pressed={answer === a} onClick={() => setAnswer(a)}>
+                  {a}
+                </button>
+              ))}
+            </div>
+            <p role="status">
+              {answer &&
+                (answer === "Nelle funzioni web"
+                  ? "Esatto. La stessa porta ora accetta anche il nome e i byte di un nuovo file."
+                  : "La porta è ancora la 443. Confronta i dati che il gestionale accettava prima e dopo.")}
+            </p>
+          </div>
+        )}
+      </HudPanel>
+      <HudPanel heading="Due superfici fuori dal percorso principale">
+        <div className="web-branches">
+          <div>
+            <h3>Pagina nel browser</h3>
+            <p>
+              Il nome del file torna dal server alla pagina. Il componente che lo visualizza deve
+              inserirlo come testo, perché quel nome può provenire da un altro utente.
+            </p>
+          </div>
+          <div>
+            <h3>Ripristino del backup</h3>
+            <p>
+              La console di ripristino accetta una richiesta da un operatore autorizzato. Ha un
+              ingresso e permessi propri, anche quando nessuno sta aprendo il file.
+            </p>
+          </div>
+        </div>
       </HudPanel>
     </article>
   );

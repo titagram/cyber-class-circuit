@@ -3,55 +3,28 @@ import { assert, describe, expect, it } from "vitest";
 import { lessonRegistry } from "@/components/lessons/registry";
 
 describe("Slide 1.4", () => {
-  it("sincronizza i nodi con lo scenario e mostra dove si ferma un accesso alla cache", () => {
+  it("collega gli anelli agli ingressi e distingue l’identità del servizio", () => {
     const Lesson = lessonRegistry["cybersecurity-1-4"];
-    assert(Lesson, "La lezione deve essere registrata");
+    assert(Lesson);
     render(<Lesson />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Ispeziona Cache Redis" }));
-    const panel = within(screen.getByRole("tabpanel", { name: "Archivi e copie" }));
-    expect(panel.getByRole("heading", { name: "Cache Redis" })).toHaveFocus();
-    expect(screen.getByRole("button", { name: "Ispeziona Cache Redis" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
-    expect(panel.getByText(/servizio interno/)).toBeVisible();
-    expect(panel.queryByText("Controllo da verificare")).not.toBeInTheDocument();
-
-    fireEvent.click(panel.getByRole("button", { name: "Segui il percorso" }));
-    const link = screen.getByTestId("data-flow-connection-backend-cache");
-    expect(link).toHaveAttribute("data-highlighted", "true");
-    expect(link).toHaveAttribute("data-direction", "forward");
-    expect(screen.getByText("Applicazione ↔ dati")).toHaveClass("df-boundary-label-active");
-
-    fireEvent.click(panel.getByRole("button", { name: "Verifica il controllo" }));
-    expect(panel.getByText("Accesso a Redis negato")).toBeVisible();
-
-    fireEvent.click(screen.getByRole("button", { name: "Ispeziona Object storage" }));
-    expect(panel.getByRole("heading", { name: "Object storage" })).toBeVisible();
-    expect(panel.queryByText("Accesso a Redis negato")).not.toBeInTheDocument();
-    expect(panel.getByRole("button", { name: "Segui il percorso" })).toBeVisible();
-    expect(link).toHaveAttribute("data-highlighted", "false");
+    fireEvent.click(screen.getByRole("button", { name: "Servizi interni" }));
+    expect(screen.getByText(/Da Internet puoi interrogare/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Servizio backend" }));
+    expect(screen.getByText(/limitano le chiavi/)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Storage del file" }));
+    expect(screen.getByText(/richiesta firmata/)).toBeVisible();
   });
-
-  it("permette di passare dalle icone al caso della rete senza una selezione residua", () => {
+  it("rende osservabile il nuovo ingresso sulla porta esistente", () => {
     const Lesson = lessonRegistry["cybersecurity-1-4"];
-    assert(Lesson, "La lezione deve essere registrata");
+    assert(Lesson);
     render(<Lesson />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Ispeziona Backend" }));
-    fireEvent.click(screen.getByRole("tab", { name: "Collegamento di rete" }));
-    const panel = within(screen.getByRole("tabpanel", { name: "Collegamento di rete" }));
-    expect(screen.getByRole("button", { name: "Ispeziona Backend" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
-    fireEvent.click(panel.getByRole("button", { name: "Segui il percorso" }));
-    expect(screen.getByTestId("data-flow-connection-browser-proxy")).toHaveAttribute(
-      "data-highlighted",
-      "true",
-    );
-    expect(screen.getByText("Utente ↔ servizio")).toHaveClass("df-boundary-label-active");
+    fireEvent.click(screen.getByRole("button", { name: "Attiva caricamento" }));
+    expect(screen.getByText(/POST .api.files · nome/)).toBeVisible();
+    expect(screen.getByText("HTTPS · 443")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Nelle funzioni web" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Esatto");
+    fireEvent.click(screen.getByRole("button", { name: "Disattiva caricamento" }));
+    expect(screen.queryByRole("button", { name: "Carica file" })).not.toBeInTheDocument();
   });
 });
 

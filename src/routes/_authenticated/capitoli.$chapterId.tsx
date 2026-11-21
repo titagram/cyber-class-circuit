@@ -5,7 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { EmptyState } from "@/components/PageHeader";
 import { lessonRegistry } from "@/components/lessons/registry";
-import { getLessonKey, getSourceChapter } from "@/lib/chapters";
+import {
+  getLessonKey,
+  getSourceChapter,
+  getRequestParentId,
+  getRequestCompanion,
+} from "@/lib/chapters";
 
 export const Route = createFileRoute("/_authenticated/capitoli/$chapterId")({
   head: () => ({
@@ -13,12 +18,12 @@ export const Route = createFileRoute("/_authenticated/capitoli/$chapterId")({
       { title: "Capitolo interattivo — Cybersecurity 101" },
       {
         name: "description",
-        content: "Capitolo interattivo del corso Crittografia 101.",
+        content: "Lezione interattiva del corso assegnato.",
       },
       { property: "og:title", content: "Capitolo interattivo — Cybersecurity 101" },
       {
         property: "og:description",
-        content: "Capitolo interattivo del corso Crittografia 101.",
+        content: "Lezione interattiva del corso assegnato.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -45,12 +50,17 @@ function ChapterPage() {
         return course ? { ...sourceChapter, courses: course } : null;
       }
 
+      const parentId = getRequestParentId(chapterId);
       const { data, error } = await supabase
         .from("chapters")
         .select("id, course_id, title, content, courses(id, title)")
-        .eq("id", chapterId)
+        .eq("id", parentId ?? chapterId)
         .maybeSingle();
       if (error) throw error;
+      if (parentId !== null) {
+        if (!data || getLessonKey(data.content) !== "cybersecurity-1-4") return null;
+        return { ...data, ...getRequestCompanion(data) };
+      }
       return data;
     },
   });
@@ -85,6 +95,15 @@ function ChapterPage() {
         <EmptyState title={chapter.title}>
           Questo capitolo non ha ancora un contenuto interattivo disponibile.
         </EmptyState>
+      )}
+      {lessonKey === "cybersecurity-1-4" && (
+        <Link
+          to="/capitoli/$chapterId"
+          params={{ chapterId: getRequestCompanion(chapter).id }}
+          className="mt-4 inline-flex text-accent underline"
+        >
+          Prosegui · Dal clic al file: request e response →
+        </Link>
       )}
     </div>
   );
