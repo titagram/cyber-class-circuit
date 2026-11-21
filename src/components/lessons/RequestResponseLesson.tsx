@@ -1,70 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowRight,
-  Database,
-  FileText,
-  Folder,
-  Globe,
-  LockKeyhole,
-  Monitor,
-  Network,
-  ShieldCheck,
-  Workflow,
-  type LucideIcon,
-} from "lucide-react";
+import { FileText } from "lucide-react";
+import { RequestArchitecture } from "./RequestArchitecture";
 import { PageHeader } from "@/components/PageHeader";
 import { HudButton, HudPanel } from "@/design-system/nightrunner";
-import {
-  buildRequestTrace,
-  phases,
-  requestLesson,
-  type Hop,
-} from "@/content/lessons/request-response";
+import { buildRequestTrace, phases, requestLesson } from "@/content/lessons/request-response";
 import "./WebSecurityLessons.css";
 
-const icons: Record<string, LucideIcon> = {
-  Browser: Monitor,
-  Schermo: Monitor,
-  "Resolver DNS": Globe,
-  "Cache DNS": Globe,
-  "Reverse proxy": Network,
-  Sessione: LockKeyhole,
-  Autorizzazione: ShieldCheck,
-  Database,
-  Storage: Folder,
-  Repository: Database,
-};
-const stack = [
-  ["Ingresso HTTP", ["Router", "Sessione", "Controller"]],
-  ["Logica applicativa", ["Servizio file", "Autorizzazione"]],
-  ["Accesso ai dati", ["Repository", "Client storage"]],
-  ["Servizi separati", ["Database", "Storage"]],
-] as const;
-
-function Handoff({ step }: { step: Hop }) {
-  const From = icons[step.from] ?? Workflow;
-  const To = icons[step.to] ?? Workflow;
-  return (
-    <figure className="web-transfer" aria-label={"Da " + step.from + " a " + step.to}>
-      <div>
-        <From aria-hidden="true" />
-        <b>{step.from}</b>
-      </div>
-      <div className="web-track" data-channel={step.channel}>
-        <span>{step.channel}</span>
-        <i />
-        <ArrowRight aria-hidden="true" />
-      </div>
-      <div>
-        <To aria-hidden="true" />
-        <b>{step.to}</b>
-      </div>
-    </figure>
-  );
-}
-
 export function RequestResponseLesson() {
-  const scene = useRef<HTMLElement>(null);
+  const scene = useRef<HTMLDivElement>(null);
   const [cached, setCached] = useState(false);
   const [allowed, setAllowed] = useState(true);
   const [index, setIndex] = useState(0);
@@ -129,8 +72,41 @@ export function RequestResponseLesson() {
             </button>
           ))}
         </nav>
-        <div className="web-split trace-layout">
-          <section ref={scene} tabIndex={-1} className="web-detail" aria-label="Passaggio corrente">
+        <div className="request-controls">
+          {" "}
+          <div className="web-options">
+            <HudButton disabled={index === 0} onClick={() => go(index - 1)}>
+              Indietro
+            </HudButton>
+            <HudButton disabled={index === last} onClick={() => go(index + 1)}>
+              Avanti
+            </HudButton>
+            <button
+              onClick={() => {
+                if (playing) setPlaying(false);
+                else {
+                  if (index === last) setIndex(0);
+                  setPlaying(true);
+                }
+              }}
+            >
+              {playing ? "Pausa" : index === last ? "Riproduci da capo" : "Riproduci"}
+            </button>
+          </div>
+          <label className="web-select">
+            Vai al passaggio
+            <select value={index} onChange={(e) => go(Number(e.target.value))}>
+              {trace.map((s, i) => (
+                <option key={s.title} value={i}>
+                  {i + 1}. {s.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="request-stage" ref={scene} tabIndex={-1}>
+          <RequestArchitecture step={step} />
+          <section className="web-detail" aria-label="Passaggio corrente">
             <small>
               Passo {index + 1} di {trace.length} · {phases[step.phase]}
             </small>
@@ -140,7 +116,6 @@ export function RequestResponseLesson() {
               aria-live={playing ? "off" : "polite"}
             >
               <h3>{step.title}</h3>
-              <Handoff step={step} />
               <div className="web-io">
                 <div>
                   <small>In ingresso</small>
@@ -168,88 +143,7 @@ export function RequestResponseLesson() {
                 </div>
               )}
             </div>
-            <div className="web-options">
-              <HudButton disabled={index === 0} onClick={() => go(index - 1)}>
-                Indietro
-              </HudButton>
-              <HudButton disabled={index === last} onClick={() => go(index + 1)}>
-                Avanti
-              </HudButton>
-              <button
-                onClick={() => {
-                  if (playing) setPlaying(false);
-                  else {
-                    if (index === last) setIndex(0);
-                    setPlaying(true);
-                  }
-                }}
-              >
-                {playing ? "Pausa" : index === last ? "Riproduci da capo" : "Riproduci"}
-              </button>
-            </div>
-            <label className="web-select">
-              Vai al passaggio
-              <select value={index} onChange={(e) => go(Number(e.target.value))}>
-                {trace.map((s, i) => (
-                  <option key={s.title} value={i}>
-                    {i + 1}. {s.title}
-                  </option>
-                ))}
-              </select>
-            </label>
           </section>
-          <figure className="web-stack">
-            <figcaption>
-              {step.phase === 1 ? "Dentro il backend" : "Percorso sulla rete"}
-            </figcaption>
-            {step.phase === 1 ? (
-              stack.map(([layer, nodes]) => (
-                <div className="web-level" key={layer}>
-                  <small>{layer}</small>
-                  <div>
-                    {nodes.map((n) => (
-                      <span key={n} data-active={n === step.from || n === step.to}>
-                        {n}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <>
-                <div
-                  className="web-dns"
-                  data-active={step.from.includes("DNS") || step.to.includes("DNS")}
-                >
-                  Ramo DNS · {cached ? "Cache locale" : "Resolver"} ↔ Browser
-                </div>
-                <div className="web-network">
-                  {(step.phase === 0
-                    ? ["Browser", "Reverse proxy", "Backend"]
-                    : ["Backend", "Reverse proxy", "Browser"]
-                  ).map((n, i) => (
-                    <div key={n}>
-                      {i > 0 && <ArrowRight aria-hidden="true" />}
-                      <span
-                        data-active={
-                          n === step.from ||
-                          n === step.to ||
-                          (n === "Backend" && (step.from === "Controller" || step.to === "Router"))
-                        }
-                      >
-                        {n}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <p>
-                  {step.phase === 0
-                    ? "Il DNS fornisce l’indirizzo. La richiesta HTTP raggiunge il proxy e poi il backend."
-                    : "Il proxy restituisce intestazioni e corpo sul collegamento con il browser."}
-                </p>
-              </>
-            )}
-          </figure>
         </div>
       </HudPanel>
       <HudPanel heading="Stesso clic, cambia un permesso">

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { RequestArchitecture } from "@/components/lessons/RequestArchitecture";
 import { RequestResponseLesson } from "@/components/lessons/RequestResponseLesson";
 import { buildRequestTrace, requestLesson } from "@/content/lessons/request-response";
 import { getCourseChapters, getRequestParentId } from "@/lib/chapters";
@@ -43,6 +44,26 @@ describe("Request e response", () => {
       ),
     ).toBe(false);
   });
+  it("mantiene la mappa e orienta ogni scambio anche al ritorno", () => {
+    const { rerender } = render(<RequestArchitecture step={buildRequestTrace(false, true)[0]} />);
+    const map = screen.getByRole("figure", { name: "Architettura della richiesta" });
+    for (const cached of [false, true]) {
+      for (const allowed of [false, true]) {
+        let entered = false;
+        for (const step of buildRequestTrace(cached, allowed)) {
+          if (step.to === "Router") entered = true;
+          rerender(<RequestArchitecture step={step} />);
+          expect(map).toHaveAttribute("data-expanded", String(entered));
+          expect(map.querySelector('[data-role="source"]')).toHaveTextContent(step.from);
+          expect(map.querySelector('[data-role="destination"]')).toHaveTextContent(step.to);
+          expect(map.querySelector(".request-transfer path")?.getAttribute("d")).toMatch(/^M.+L/);
+          expect(map.querySelector("figcaption code")?.textContent).toBe(step.payload);
+          for (const node of ["Browser", "Reverse proxy", "Database", "Storage", "Resolver DNS"])
+            expect(map.querySelector("svg")).toHaveTextContent(node);
+        }
+      }
+    }
+  });
   it("riproduce, ferma e salta al confronto dei permessi", () => {
     vi.useFakeTimers();
     try {
@@ -59,6 +80,8 @@ describe("Request e response", () => {
       fireEvent.click(screen.getByRole("button", { name: "Autorizzazione" }));
       fireEvent.click(screen.getByRole("button", { name: "Segui il caso negato" }));
       expect(screen.getByText("Decisione: lettura negata", { selector: "pre" })).toBeVisible();
+      fireEvent.click(screen.getByRole("button", { name: "Avanti" }));
+      expect(screen.getByRole("heading", { name: "La decisione torna al servizio" })).toBeVisible();
       fireEvent.click(screen.getByRole("button", { name: "Avanti" }));
       expect(
         screen.getByRole("heading", { name: "Il servizio interrompe la lettura" }),

@@ -1,0 +1,159 @@
+.request-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(17rem, 0.8fr);
+  gap: 0.9rem;
+  align-items: start;
+}
+.request-architecture {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--nr-border);
+  background: var(--nr-panel-end);
+}
+.request-map-frame {
+  padding: clamp(0.2rem, 1vw, 0.9rem);
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--nr-muted) 20%, transparent) 1px,
+    transparent 1px
+  );
+  background-size: 13px 13px;
+}
+.request-map-frame svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  overflow: visible;
+}
+.request-node rect {
+  fill: var(--nr-panel);
+  stroke: var(--nr-muted);
+  stroke-width: 0.8px;
+}
+.request-node text,
+.request-backend text,
+.request-data-label {
+  fill: var(--nr-text);
+  font: 600 15px var(--nr-display-font);
+}
+.request-node[data-role="source"] rect {
+  stroke: var(--nr-yellow);
+  stroke-width: 2px;
+}
+.request-node[data-role="destination"] rect {
+  stroke: var(--nr-cyan);
+  stroke-width: 2px;
+  fill: color-mix(in srgb, var(--nr-cyan) 12%, var(--nr-panel));
+}
+.request-backend rect {
+  fill: var(--nr-panel-end);
+  stroke: var(--nr-border);
+  stroke-width: 1.4;
+}
+.request-backend text,
+.request-data-label {
+  font-size: 12px;
+  fill: var(--nr-muted);
+  text-anchor: middle;
+}
+.request-backend text.request-enclosure-title {
+  text-anchor: start;
+  fill: var(--nr-text);
+  font-size: 15px;
+  font-weight: 700;
+}
+.request-wire,
+.request-transfer path {
+  fill: none;
+  stroke: var(--nr-muted);
+  stroke-opacity: 0.5;
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+}
+.request-transfer path {
+  stroke: var(--nr-cyan);
+  stroke-opacity: 1;
+  stroke-width: 2.4;
+}
+.request-transfer circle {
+  fill: var(--nr-yellow);
+  stroke: var(--nr-panel);
+  stroke-width: 1;
+  offset-distance: 100%;
+  animation: request-travel 1.6s ease-in-out both;
+}
+@keyframes request-travel {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+.request-backend rect {
+  transform-box: fill-box;
+  transform-origin: center top;
+  animation: request-open 0.4s ease-out both;
+}
+.request-node[data-module="true"] text,
+.request-backend text {
+  animation: request-show-module 0.4s ease-out both;
+}
+@keyframes request-open {
+  from {
+    transform: scaleY(0.16);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes request-show-module {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.request-architecture figcaption {
+  border-top: 1px solid var(--nr-border);
+  padding: 0.65rem 0.9rem;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+.request-architecture figcaption code {
+  width: 100%;
+  color: var(--nr-cyan);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.88rem;
+}
+.request-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+.request-controls .web-options {
+  margin: 0;
+}
+.request-controls .web-select {
+  flex: 1;
+  min-width: min(100%, 14rem);
+}
+@media (max-width: 900px) {
+  .request-stage {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .request-transfer circle,
+  .request-backend rect,
+  .request-backend text,
+  .request-node[data-module="true"] text {
+    animation: none;
+  }
+}

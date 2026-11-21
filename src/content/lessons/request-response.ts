@@ -7,27 +7,45 @@ export const phases = [
   "Dentro l’applicazione",
   "Ritorno al browser",
 ] as const;
+export type TraceNode =
+  | "Giulia"
+  | "Browser"
+  | "Schermo"
+  | "Resolver DNS"
+  | "Cache DNS"
+  | "Reverse proxy"
+  | "Router"
+  | "Sessione"
+  | "Controller"
+  | "Servizio file"
+  | "Autorizzazione"
+  | "Repository"
+  | "Client storage"
+  | "Database"
+  | "Storage";
 export type Hop = {
   phase: number;
-  from: string;
-  to: string;
+  from: TraceNode;
+  to: TraceNode;
   channel: "rete" | "chiamata interna" | "elaborazione locale";
   title: string;
   input: string;
   output: string;
   why: string;
+  payload: string;
 };
 function hop(
   phase: number,
-  from: string,
-  to: string,
+  from: TraceNode,
+  to: TraceNode,
   channel: Hop["channel"],
   title: string,
   input: string,
   output: string,
   why: string,
+  payload: string,
 ): Hop {
-  return { phase, from, to, channel, title, input, output, why };
+  return { phase, from, to, channel, title, input, output, why, payload };
 }
 const local = "elaborazione locale";
 const call = "chiamata interna";
@@ -41,6 +59,7 @@ const start = hop(
   "https://files.example/api/files/42",
   "host = files.example\npercorso = /api/files/42",
   "Il browser deve trovare il server a cui collegarsi. Conserva il percorso per la successiva richiesta HTTP.",
+  "Apri /api/files/42",
 );
 const lookup = hop(
   0,
@@ -51,6 +70,7 @@ const lookup = hop(
   "files.example · record A",
   "Domanda DNS per files.example",
   "Il browser affida la risoluzione al sistema. Al resolver serve il nome del sito. Il percorso del file e il cookie restano sul dispositivo.",
+  "Record A di files.example?",
 );
 const address = hop(
   0,
@@ -61,6 +81,7 @@ const address = hop(
   "Risposta DNS · record A",
   "files.example → 192.0.2.10",
   "Il browser ha ora una destinazione IP. Il resolver ha concluso il suo compito per questa navigazione.",
+  "192.0.2.10",
 );
 const cached = hop(
   0,
@@ -71,6 +92,7 @@ const cached = hop(
   "Voce DNS ancora valida",
   "files.example → 192.0.2.10",
   "Il dispositivo riusa l’indirizzo finché la voce è valida. In questa esecuzione salta lo scambio con il resolver.",
+  "192.0.2.10 dalla cache",
 );
 const front = [
   hop(
@@ -82,6 +104,7 @@ const front = [
     "192.0.2.10 · porta 443",
     "Connessione TCP stabilita",
     "In questo esempio usiamo HTTP/1.1 su una nuova connessione. I due estremi stabiliscono il trasporto prima di inviare la richiesta.",
+    "Apertura TCP · porta 443",
   ),
   hop(
     0,
@@ -92,6 +115,7 @@ const front = [
     "Nome atteso: files.example",
     "Canale TLS stabilito con il proxy",
     "Il browser verifica il certificato per il nome richiesto. I due estremi concordano le chiavi che proteggeranno i messaggi su questo tratto.",
+    "ClientHello · files.example",
   ),
   hop(
     0,
@@ -102,6 +126,7 @@ const front = [
     "GET /api/files/42 HTTP/1.1\nHost: files.example\nCookie: session=demo",
     "Metodo GET · file 42 · cookie di sessione",
     "Il metodo indica la lettura e il percorso identifica la risorsa. Il browser include il cookie valido per questo sito. Il proxy termina TLS e legge la richiesta.",
+    "GET /api/files/42 + cookie",
   ),
   hop(
     0,
@@ -112,6 +137,7 @@ const front = [
     "Host: files.example\nPercorso: /api/files/42",
     "Richiesta inoltrata al backend file",
     "La configurazione del proxy associa questo sito e prefisso al backend. Sul collegamento interno parte una richiesta verso quel servizio.",
+    "GET /api/files/42 + cookie",
   ),
 ];
 const application = [
@@ -124,6 +150,7 @@ const application = [
     "GET /api/files/42",
     "Rotta GET /api/files/:id\nid = 42",
     "Il router trova il gestore della lettura. In questa applicazione la rotta richiede una sessione, quindi passa prima al modulo che identifica la persona.",
+    "Rotta di lettura · id 42 + sessione",
   ),
   hop(
     1,
@@ -134,6 +161,7 @@ const application = [
     "Cookie: session=demo",
     "utente = Giulia\nid = 42",
     "Il modulo verifica la validità della sessione e associa la richiesta a Giulia. Il permesso sul file resta da valutare.",
+    "Giulia · id 42",
   ),
   hop(
     1,
@@ -144,6 +172,7 @@ const application = [
     "utente = Giulia · parametro = 42",
     "apriFile(Giulia, 42)",
     "Il controller controlla il formato dell’identificatore e consegna al servizio i valori applicativi. Da qui i moduli possono lavorare senza conoscere HTTP.",
+    "apriFile(Giulia, 42)",
   ),
   hop(
     1,
@@ -154,6 +183,7 @@ const application = [
     "apriFile(Giulia, 42)",
     "cercaScheda(42)",
     "Per decidere se aprire il file servono i permessi e il riferimento all’oggetto. Il repository si occupa di recuperare questi dati.",
+    "cercaScheda(42)",
   ),
   hop(
     1,
@@ -164,6 +194,7 @@ const application = [
     "Identificatore del file = 42",
     "Ricerca per ID nella tabella dei file",
     "Il repository invia al database il valore 42 come parametro di lettura. Al servizio servono i metadati per la decisione successiva.",
+    "Ricerca con parametro 42",
   ),
   hop(
     1,
@@ -174,6 +205,7 @@ const application = [
     "Ricerca per ID completata",
     "Scheda 42 · permessi · files/42.pdf",
     "La riga descrive il file e indica dove si trova. I byte del PDF sono ancora nello storage.",
+    "Riga 42 · permessi · files/42.pdf",
   ),
   hop(
     1,
@@ -184,6 +216,7 @@ const application = [
     "Riga restituita dal database",
     "SchedaFile(42)",
     "Il repository converte la riga in una scheda utilizzabile dal servizio. Ora il servizio può chiedere una decisione sul permesso.",
+    "SchedaFile(42)",
   ),
 ];
 function decision(allowed: boolean) {
@@ -196,6 +229,7 @@ function decision(allowed: boolean) {
     "Giulia + azione lettura + permessi del file",
     allowed ? "Decisione: lettura consentita" : "Decisione: lettura negata",
     "Il modulo confronta l’identità con la regola per quel file e restituisce la decisione al servizio. Qui si separano i percorsi consentito e negato.",
+    "Giulia · lettura · scheda 42",
   );
 }
 const readFile = [
@@ -208,6 +242,7 @@ const readFile = [
     "Permesso concesso · files/42.pdf",
     "apriOggetto(files/42.pdf)",
     "Il servizio passa la chiave dell’oggetto al client dedicato. Soltanto questo modulo deve conoscere il protocollo e le credenziali dello storage.",
+    "apriOggetto(files/42.pdf)",
   ),
   hop(
     1,
@@ -218,6 +253,7 @@ const readFile = [
     "Identità tecnica del backend + files/42.pdf",
     "Flusso di byte del PDF",
     "Lo storage verifica il permesso del servizio e apre l’oggetto richiesto.",
+    "Identità tecnica + chiave oggetto",
   ),
   hop(
     1,
@@ -228,6 +264,7 @@ const readFile = [
     "Oggetto aperto: files/42.pdf",
     "Flusso leggibile sul collegamento interno",
     "Lo storage consegna i byte al client a blocchi. Il backend può prepararne l’inoltro senza caricare tutto il file in memoria.",
+    "Blocchi del PDF",
   ),
   hop(
     1,
@@ -238,6 +275,7 @@ const readFile = [
     "Flusso proveniente dallo storage",
     "Lettore dei byte del PDF",
     "Il servizio riceve un oggetto da cui leggere. I dettagli della connessione restano nel client storage.",
+    "Lettore dei byte",
   ),
   hop(
     1,
@@ -248,6 +286,7 @@ const readFile = [
     "Lettore del PDF e tipo del file",
     "Esito: file disponibile",
     "Il lavoro applicativo è concluso. Il controller usa il risultato per costruire la risposta HTTP.",
+    "Flusso PDF + tipo del file",
   ),
 ];
 const denied = hop(
@@ -259,6 +298,7 @@ const denied = hop(
   "Decisione: lettura negata",
   "Esito applicativo: accesso negato",
   "Il servizio restituisce il diniego al controller. Il client storage non viene chiamato e il PDF resta nell’archivio.",
+  "Errore di accesso negato",
 );
 function response(allowed: boolean) {
   const headers = allowed
@@ -274,6 +314,7 @@ function response(allowed: boolean) {
       allowed ? "Flusso aperto sul PDF" : "Accesso negato",
       headers,
       "Il controller rappresenta l’esito con uno stato HTTP e indica il tipo del corpo. Il server invia la risposta al proxy.",
+      headers,
     ),
     hop(
       2,
@@ -286,6 +327,20 @@ function response(allowed: boolean) {
         ? "Il browser prepara il visualizzatore PDF"
         : "Il browser prepara una risposta testuale",
       "Il proxy inoltra la risposta sul canale con il browser. Stato e tipo di contenuto sono disponibili prima del completamento del corpo.",
+      headers,
+    ),
+    hop(
+      2,
+      "Controller",
+      "Reverse proxy",
+      net,
+      "Il backend invia il corpo",
+      allowed ? "Lettore del PDF aperto dal servizio" : "Esito di accesso negato",
+      allowed ? "Blocchi del file 42.pdf" : "Testo del diniego",
+      allowed
+        ? "Il server legge dal flusso fornito al controller e invia i blocchi al proxy sulla connessione interna."
+        : "Il controller ha prodotto un messaggio leggibile per Giulia. Il server lo invia al proxy come corpo della risposta 403.",
+      allowed ? "Blocchi del PDF" : "Accesso al file negato",
     ),
     hop(
       2,
@@ -296,6 +351,7 @@ function response(allowed: boolean) {
       allowed ? "Corpo della risposta dal backend" : "Messaggio di errore dal backend",
       allowed ? "%PDF-… · dati della prima pagina" : "Accesso al file negato",
       "Il proxy inoltra il corpo. Il browser può iniziare a elaborare i dati ricevuti mentre il trasferimento prosegue.",
+      allowed ? "Byte del PDF" : "Accesso al file negato",
     ),
     hop(
       2,
@@ -308,6 +364,7 @@ function response(allowed: boolean) {
       allowed
         ? "Quando dispone dei dati sufficienti, il visualizzatore interpreta il PDF e disegna la pagina sullo schermo di Giulia."
         : "Il browser mostra il testo restituito dal backend. Nessun byte del file è stato letto dallo storage o consegnato al browser.",
+      allowed ? "Pagina 1 disegnata" : "Messaggio di errore",
     ),
   ];
 }
@@ -318,6 +375,19 @@ export function buildRequestTrace(dnsCached: boolean, allowed: boolean): [Hop, .
     ...front,
     ...application,
     decision(allowed),
+    hop(
+      1,
+      "Autorizzazione",
+      "Servizio file",
+      call,
+      "La decisione torna al servizio",
+      "Regola di lettura valutata per Giulia",
+      allowed ? "Permesso concesso" : "Permesso negato",
+      allowed
+        ? "Ricevuto il consenso, il servizio può affidare la lettura al client storage."
+        : "Ricevuto il diniego, il servizio restituisce un errore al controller. Lo storage resta inattivo.",
+      allowed ? "Lettura consentita" : "Lettura negata",
+    ),
     ...(allowed ? readFile : [denied]),
     ...response(allowed),
   ];
