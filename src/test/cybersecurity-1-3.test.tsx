@@ -12,25 +12,24 @@ function openMoment(name: string) {
 }
 
 describe("Slide 1.3", () => {
-  it("apre il PDF dopo il controllo del permesso e conserva l’originale nell’archivio", () => {
+  it("segue il download e mostra una copia locale insieme all’originale", () => {
     vi.useFakeTimers();
     render(<Cybersecurity13Slide />);
-    const browser = within(screen.getByRole("region", { name: "Browser di Giulia" }));
-    const original = within(
-      screen.getByRole("region", { name: "Archivio del gestionale" }),
-    ).getByText("File originale");
-    expect(browser.getByText("42.pdf")).toBeVisible();
-    expect(browser.queryByText("Prima pagina di 42.pdf")).not.toBeInTheDocument();
-    fireEvent.click(browser.getByRole("button", { name: "Apri file" }));
-    expect(screen.getByRole("status")).toHaveTextContent("controlla se Giulia ha il permesso");
-    act(() => vi.advanceTimersByTime(1600));
-    expect(screen.getByRole("status")).toHaveTextContent("invia i suoi byte al browser");
+    const computer = within(screen.getByRole("region", { name: "Computer di Giulia" }));
+    const original = within(screen.getByRole("region", { name: "Server" })).getByText("42.pdf");
+    expect(computer.getByText("42.pdf")).toBeVisible();
+    expect(computer.queryByText("Cartella Download")).not.toBeInTheDocument();
+    fireEvent.click(computer.getByRole("button", { name: "Scarica PDF" }));
+    expect(screen.getByRole("status")).toHaveTextContent("browser chiede al server");
+    act(() => vi.advanceTimersByTime(1500));
+    expect(screen.getByRole("status")).toHaveTextContent("server invia i byte");
+    expect(computer.queryByText("Cartella Download")).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(2200));
+    expect(computer.getByText("Cartella Download")).toBeVisible();
+    expect(computer.getAllByText("42.pdf")).toHaveLength(2);
     expect(original).toBeVisible();
-    act(() => vi.advanceTimersByTime(2400));
-    expect(browser.getByText("Prima pagina di 42.pdf")).toBeVisible();
-    expect(original).toBeVisible();
-    fireEvent.click(browser.getByRole("button", { name: "Torna all’elenco" }));
-    expect(browser.queryByText("Prima pagina di 42.pdf")).not.toBeInTheDocument();
+    fireEvent.click(computer.getByRole("button", { name: "Rivedi dall’inizio" }));
+    expect(computer.queryByText("Cartella Download")).not.toBeInTheDocument();
     expect(original).toBeVisible();
   });
 

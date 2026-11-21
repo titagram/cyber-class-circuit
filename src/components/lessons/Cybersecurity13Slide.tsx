@@ -61,7 +61,7 @@ export function Cybersecurity13Slide() {
       />
 
       <HudTabPanel tabsId="cybersecurity-1-3-moments" value="domanda" activeValue={moment}>
-        <HudPanel heading="Il file è nell’elenco. Dov’è il suo contenuto?" className="lesson-panel-stack">
+        <HudPanel heading="Giulia vuole scaricare un PDF" className="lesson-panel-stack">
           {moment === "domanda" && <FileOpeningScene />}
           <MomentActions moment="domanda" onChange={setMoment} />
         </HudPanel>

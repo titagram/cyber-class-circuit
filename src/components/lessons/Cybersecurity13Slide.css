@@ -28,16 +28,14 @@
 /* Opening scene: keep the stored PDF visible while the browser receives its bytes. */
 .opening-map {display:grid;grid-template-columns:minmax(11rem,1fr) minmax(6rem,.45fr) minmax(15rem,1.55fr);align-items:center;}
 .opening-map section {min-width:0;align-self:stretch;padding:clamp(.7rem,2vw,1.25rem);border:1px solid var(--nr-border);background:var(--nr-panel);}
-.opening-map h3,.opening-preview,.opening-row {display:flex;align-items:center;gap:.6rem;}
+.opening-map h3,.opening-file,.opening-row {display:flex;align-items:center;gap:.6rem;}
 .opening-map h3 {font:700 1.18rem var(--nr-display-font);padding-bottom:.65rem;border-bottom:1px solid var(--nr-border);}
 .opening-map svg {width:1.2rem;flex-shrink:0;color:var(--nr-cyan);}
-.opening-preview,.opening-row {margin-top:.8rem;flex-wrap:wrap;}
-.opening-preview small {display:block;color:var(--nr-muted);}
+.opening-row {margin-top:.8rem;flex-wrap:wrap;}
 .opening-row button {margin-inline-start:auto;}
-.opening-pdf {box-sizing:border-box;width:3.2rem;padding:.45rem .45rem .65rem;border:1px solid var(--nr-cyan);background:var(--nr-panel-end);color:var(--nr-cyan);}
-.opening-pdf strong {font:700 .8rem var(--nr-display-font);}
-.opening-pdf i {display:block;height:2px;margin-top:3px;background:currentColor;opacity:.6;}
-.opening-pdf i:last-child {width:60%;}
+.opening-file {margin-top:.8rem;padding:.65rem .8rem;background:var(--nr-panel-end);border-left:2px solid var(--nr-cyan);}
+.opening-file small {display:block;color:var(--nr-muted);}
+.opening-map[data-phase="request"] .opening-track svg {left:0;right:auto;transform:rotate(180deg);}
 .opening-bridge {text-align:center;font:600 .85rem var(--nr-display-font);color:var(--nr-muted);}
 .opening-track {height:1rem;position:relative;}
 .opening-track::before {content:"";position:absolute;top:50%;left:0;right:0;border-top:1px dashed var(--nr-border);}

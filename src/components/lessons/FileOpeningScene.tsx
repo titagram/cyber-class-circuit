@@ -1,62 +1,37 @@
 import { useEffect, useState } from "react";
-import { Archive, ArrowRight, FileText, Monitor } from "lucide-react";
+import { ArrowRight, FileText, FolderDown, Monitor, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { HudBadge } from "@/design-system/nightrunner";
 
-type Phase = "list" | "checking" | "sending" | "open";
+type Phase = "ready" | "request" | "transfer" | "saved";
 
-const transferLabels: Record<Phase, string> = {
-  list: "Gestionale",
-  checking: "Verifica permesso",
-  sending: "Byte del PDF",
-  open: "Byte ricevuti",
+const captions: Record<Phase, string> = {
+  ready: "Giulia vede il link a 42.pdf nella pagina. Il file si trova sul server.",
+  request: "Il browser chiede al server il file 42.pdf.",
+  transfer: "Il server invia i byte di 42.pdf al computer di Giulia.",
+  saved:
+    "Il download è completo. Giulia ha una copia di 42.pdf nella cartella Download. L’originale è ancora sul server.",
 };
-
-const explanations: Record<Phase, string> = {
-  list: "Il gestionale ha inviato al browser il nome del file e la sua classificazione. Questi dati bastano per comporre la riga dell’elenco.",
-  checking:
-    "Il clic chiede al gestionale il contenuto di 42.pdf. Prima di leggerlo dall’archivio, il gestionale controlla se Giulia ha il permesso di aprirlo.",
-  sending:
-    "Giulia ha il permesso di lettura. Il gestionale legge il PDF dall’archivio e invia i suoi byte al browser.",
-  open: "Il browser usa i byte ricevuti per disegnare la prima pagina. Giulia la vede sullo schermo e il file originale è ancora nell’archivio.",
-};
-
-function PdfPage() {
-  return (
-    <div className="opening-pdf" aria-hidden="true">
-      <strong>PDF</strong>
-      <i />
-      <i />
-      <i />
-      <i />
-    </div>
-  );
-}
 
 export function FileOpeningScene() {
-  const [phase, setPhase] = useState<Phase>("list");
+  const [phase, setPhase] = useState<Phase>("ready");
   useEffect(() => {
-    if (phase !== "checking" && phase !== "sending") return;
+    if (phase !== "request" && phase !== "transfer") return;
     const timer = window.setTimeout(
-      () => setPhase(phase === "checking" ? "sending" : "open"),
-      phase === "checking" ? 1600 : 2400,
+      () => setPhase(phase === "request" ? "transfer" : "saved"),
+      phase === "request" ? 1500 : 2200,
     );
     return () => window.clearTimeout(timer);
   }, [phase]);
 
   return (
     <>
-      <p className="lesson-scenario">
-        Giulia entra nel gestionale della sua azienda e trova 42.pdf nell’elenco. Che cosa ha già
-        ricevuto il suo browser?
-      </p>
       <div className="opening-map" data-phase={phase}>
-        <section className="opening-storage" aria-label="Archivio del gestionale">
+        <section aria-label="Server">
           <h3>
-            <Archive aria-hidden="true" /> Archivio del gestionale
+            <Server aria-hidden="true" /> Server
           </h3>
-          <div className="opening-preview">
-            <PdfPage />
+          <div className="opening-file">
+            <FileText aria-hidden="true" />
             <div>
               <strong>42.pdf</strong>
               <small>File originale</small>
@@ -64,50 +39,55 @@ export function FileOpeningScene() {
           </div>
         </section>
         <div className="opening-bridge" aria-hidden="true">
-          <span>{transferLabels[phase]}</span>
-          <div className="opening-track">
-            {phase === "sending" && (
-              <>
-                <i />
-                <i />
-                <i />
-              </>
-            )}
-            {(phase === "sending" || phase === "open") && <ArrowRight />}
-          </div>
+          {phase !== "ready" && (
+            <>
+              <span>
+                {phase === "request"
+                  ? "Richiesta"
+                  : phase === "transfer"
+                    ? "Byte del PDF"
+                    : "File ricevuto"}
+              </span>
+              <div className="opening-track">
+                {phase === "transfer" && (
+                  <>
+                    <i />
+                    <i />
+                    <i />
+                  </>
+                )}
+                <ArrowRight />
+              </div>
+            </>
+          )}
         </div>
-        <section className="opening-browser" aria-label="Browser di Giulia">
+        <section aria-label="Computer di Giulia">
           <h3>
-            <Monitor aria-hidden="true" /> Browser di Giulia
+            <Monitor aria-hidden="true" /> Computer di Giulia
           </h3>
           <div className="opening-row">
-            <FileText aria-hidden="true" />
-            <strong>42.pdf</strong>
-            <HudBadge tone="warning">Riservato</HudBadge>
+            <span>42.pdf</span>
             <Button
-              disabled={phase === "checking" || phase === "sending"}
-              onClick={() => setPhase(phase === "open" ? "list" : "checking")}
+              disabled={phase === "request" || phase === "transfer"}
+              onClick={() => setPhase(phase === "saved" ? "ready" : "request")}
             >
-              {phase === "open" ? "Torna all’elenco" : "Apri file"}
+              {phase === "saved" ? "Rivedi dall’inizio" : "Scarica PDF"}
             </Button>
           </div>
-          {phase === "open" && (
-            <div className="opening-preview">
-              <PdfPage />
+          {phase === "saved" && (
+            <div className="opening-file">
+              <FolderDown aria-hidden="true" />
               <div>
-                <strong>Prima pagina di 42.pdf</strong>
-                <small>Visualizzata nel browser</small>
+                <small>Cartella Download</small>
+                <strong>42.pdf</strong>
               </div>
             </div>
           )}
         </section>
       </div>
       <p className="opening-caption" role="status" aria-atomic="true">
-        {explanations[phase]}
+        {captions[phase]}
       </p>
-      {phase === "open" && (
-        <p>Chi ha verificato il permesso, chi ha recuperato i byte e chi ha disegnato la pagina?</p>
-      )}
     </>
   );
 }
