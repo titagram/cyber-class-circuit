@@ -3,94 +3,114 @@ import { assert, describe, expect, it } from "vitest";
 import { lessonRegistry } from "@/components/lessons/registry";
 
 describe("Slide 1.4", () => {
-  function openPortal() {
+  function open() {
     const Lesson = lessonRegistry["cybersecurity-1-4"];
     assert(Lesson);
     render(<Lesson />);
     const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
-    const notebook = within(screen.getByRole("region", { name: "Taccuino di osservazione" }));
-    const map = within(screen.getByRole("figure", { name: "Mappa a cipolla del portale" }));
-    function verify(index: number) {
-      const option = notebook.getAllByRole("radio")[index];
-      assert(option);
-      fireEvent.click(option);
-      click("Verifica l’ipotesi");
-    }
-    return { click, notebook, map, verify };
+    const trace = screen.getByRole("region", { name: "Ultimo scambio" });
+    const map = screen.getByRole("figure", { name: "Mappa a cipolla del portale" });
+    return { click, trace, map };
   }
 
-  it("costruisce la mappa solo dalle verifiche e distingue pagina, lingua e PDF", () => {
-    const { click, notebook, map, verify } = openPortal();
-    expect(map.queryAllByRole("button")).toHaveLength(0);
-    expect(notebook.getByRole("button", { name: "Verifica l’ipotesi" })).toBeDisabled();
-    verify(1);
-    expect(notebook.getByRole("status")).toHaveTextContent("Ipotesi smentita");
-    expect(map.getAllByRole("button")).toHaveLength(1);
-    click("Catalogo");
-    expect(notebook.getByText("GET /documenti")).toBeVisible();
-    verify(1);
-    click("Lingua: English");
-    expect(notebook.getByText("GET /locales/en.json")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Catalogue" })).toBeVisible();
-    verify(0);
-    click("Open PDF");
-    expect(notebook.getByText(/401 Unauthorized/)).toBeVisible();
-    verify(1);
-    expect(map.getAllByRole("button")).toHaveLength(2);
-    click("Accedi come demo");
-    click("Open PDF");
-    expect(notebook.getByText(/403 Forbidden/)).toBeVisible();
-    fireEvent.click(screen.getByRole("checkbox"));
-    expect(notebook.getByText(/Content-Type: application.pdf/)).toBeVisible();
-    verify(1);
-    expect(map.getAllByRole("button")).toHaveLength(3);
-    expect(screen.getByRole("region", { name: "Inventario delle superfici" })).toHaveTextContent(
-      "Storage privato",
-    );
-  });
-
-  it("mostra errori uniformi e un limite temporale deterministico", () => {
-    const { click, notebook, verify } = openPortal();
-    const select = (value: string) =>
-      fireEvent.change(screen.getByLabelText("Credenziali simulate"), { target: { value } });
-    for (const value of ["unknown", "password", "unknown"]) {
-      select(value);
-      click("Accedi come demo");
-      expect(notebook.getByText(/401 Unauthorized/)).toHaveTextContent("Credenziali non valide");
+  it("rivela subito attore, richiesta, risposta ed effetto per ogni ingresso pubblico", () => {
+    const { click, trace, map } = open();
+    for (const label of ["Chi agisce", "Cosa invia", "Chi risponde", "Cosa cambia"])
+      expect(within(trace).getByText(label)).toBeVisible();
+    expect(trace).toHaveTextContent("GET /");
+    for (const [action, request, response] of [
+      ["Apri il catalogo", "GET /documenti", "text/html"],
+      ["Cambia lingua", "GET /locales/en.json", "Download"],
+      ["Cambia lingua", "GET /locales/it.json", "Scarica"],
+      ["Cerca nel catalogo", "GET /api/search?q=42.pdf", "nome e ID"],
+      ["Scarica senza sessione", "GET /api/documents/42", "401 Unauthorized"],
+    ] as const) {
+      click(action);
+      expect(trace).toHaveTextContent(request);
+      expect(trace).toHaveTextContent(response);
     }
-    select("valid");
-    click("Accedi come demo");
-    expect(notebook.getByText(/429 Too Many Requests/)).toBeVisible();
-    verify(1);
-    click("Avanza di 60 s nel simulatore");
-    click("Accedi come demo");
-    expect(notebook.getByText(/Set-Cookie/)).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Termine da cercare"), { target: { value: "x & y" } });
+    click("Cerca nel catalogo");
+    expect(trace).toHaveTextContent("q=x%20%26%20y");
+    expect(trace).toHaveTextContent("elenco vuoto");
+    expect(map).toHaveTextContent("Ingressi osservati (5)");
+    expect(screen.queryByRole("region", { name: "Verifica finale" })).toBeNull();
   });
 
-  it("segue ricerca, nuova versione, anteprima, link revocato e ripristino", () => {
-    const { click, notebook, verify } = openPortal();
-    click("Cerca");
-    expect(notebook.getByText("GET /api/search?q=bilancio")).toBeVisible();
-    verify(1);
-    expect(notebook.getByRole("status")).toHaveTextContent("parametro");
-    click("Accedi come demo");
-    click("Carica una versione di 42.pdf");
-    expect(notebook.getByText(/versione 2/)).toBeVisible();
-    verify(1);
-    expect(screen.getByRole("button", { name: "Genera anteprima" })).toBeDisabled();
+  it("mostra l’effetto del login, dei permessi e della stessa lettura via API", () => {
+    const { click, trace, map } = open();
+    fireEvent.change(screen.getByLabelText("Credenziali simulate"), {
+      target: { value: "invalid" },
+    });
+    for (let i = 0; i < 3; i++) click("Accedi come Giulia");
+    click("Accedi come Giulia");
+    expect(trace).toHaveTextContent("429 Too Many Requests");
+    click("Avanza di 60 s");
+    fireEvent.change(screen.getByLabelText("Credenziali simulate"), { target: { value: "valid" } });
+    click("Accedi come Giulia");
+    expect(trace).toHaveTextContent("Set-Cookie");
+    click("2 · Giulia con sessione");
+    expect(trace).toHaveTextContent("403 Forbidden");
+    fireEvent.click(screen.getByLabelText("Permesso di lettura su 42.pdf"));
+    expect(trace).toHaveTextContent("200 OK · application/pdf");
+    expect(map).toHaveTextContent("Metadati e storage");
+    click("3 · Altri attori esterni");
+    click("Scarica tramite API");
+    expect(trace).toHaveTextContent("GET /api/documents/42");
+    expect(trace).toHaveTextContent("Bearer api-demo");
+    expect(trace).toHaveTextContent("Programma esterno autorizzato");
+    expect(map).toHaveTextContent("Ingressi osservati (4)");
+  });
+
+  it("propaga versione e revoca fra scene senza far ripartire il portale", () => {
+    const { click, trace } = open();
+    click("2 · Giulia con sessione");
+    click("Carica una nuova versione");
+    expect(trace).toHaveTextContent("v1 a v2");
+    click("Genera anteprima");
+    expect(trace).toHaveTextContent("403 Forbidden");
     fireEvent.click(screen.getByRole("checkbox"));
     click("Genera anteprima");
-    expect(notebook.getByText(/image.png/)).toBeVisible();
-    click("Crea link condiviso");
-    click("Apri link come collega");
-    expect(notebook.getByText(/200 OK/)).toBeVisible();
+    expect(trace).toHaveTextContent("image/png");
+    click("Crea un link");
+    expect(trace).toHaveTextContent("/s/demo-2");
+    click("3 · Altri attori esterni");
+    expect(trace).toHaveTextContent("GET /s/demo-2");
+    expect(trace).toHaveTextContent("application/pdf · versione 2");
+    click("Ripristina dal backup");
+    expect(trace).toHaveTextContent("sostituisce v2");
+    click("2 · Giulia con sessione");
+    expect(trace).toHaveTextContent("application/pdf · versione 1");
     click("Revoca il link");
-    click("Apri link come collega");
-    expect(notebook.getByText(/410 Gone/)).toBeVisible();
-    click("Ripristina v1 come operatore demo");
-    expect(notebook.getByText(/ripristinata: 1/)).toBeVisible();
-    click("Apri PDF");
-    expect(notebook.getByText(/versione 1/)).toBeVisible();
+    click("3 · Altri attori esterni");
+    expect(trace).toHaveTextContent("410 Gone");
+  });
+
+  it("presenta una sola verifica finale sul link valido e consente la correzione", () => {
+    const { click, map } = open();
+    click("3 · Altri attori esterni");
+    click("Vai alla verifica finale");
+    expect(map).toBeVisible();
+    const check = within(screen.getByRole("region", { name: "Verifica finale" }));
+    const submit = check.getByRole("button", { name: "Verifica lo scambio" });
+    expect(submit).toBeDisabled();
+    const fields = check.getAllByRole("combobox");
+    const actor = check.getByLabelText("Chi agisce");
+    [
+      "Giulia",
+      "Il token nel link",
+      "Il gestore delle condivisioni",
+      "Il collega riceve una copia",
+    ].forEach((value, i) => {
+      const field = fields[i];
+      assert(field);
+      fireEvent.change(field, { target: { value } });
+    });
+    fireEvent.click(submit);
+    expect(check.getByRole("status")).toHaveTextContent("3/4");
+    fireEvent.change(actor, { target: { value: "Il collega" } });
+    fireEvent.click(submit);
+    expect(check.getByRole("status")).toHaveTextContent("4/4");
   });
 });
 

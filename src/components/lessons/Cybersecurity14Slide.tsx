@@ -1,523 +1,361 @@
 import { useState } from "react";
-import { FileText, Globe, Search, Upload } from "lucide-react";
-import { PageHeader } from "@/components/PageHeader";
-import { HudPanel } from "@/design-system/nightrunner";
 import {
-  catalog,
-  exchange,
-  home,
-  layerNames,
-  readFile,
-  type Exchange,
-  type Finding,
+  ArrowDownToLine,
+  ArrowRight,
+  FileText,
+  Layers,
+  Network,
+  Send,
+  User,
+  Users,
+} from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import {
+  actions,
+  initialInputs,
+  initialPortal,
+  perform,
+  sceneActions,
+  scenes,
+  type Action,
+  type Inputs,
+  type PortalExchange,
+  type Scene,
 } from "@/content/lessons/portal-42";
 import "./WebSecurityLessons.css";
 import "./Portal42.css";
 
-type Discovery = { finding: Finding; source: string; evidence: string };
-type Login = "valid" | "password" | "unknown";
+const layers = ["Ingressi dall’esterno", "Funzioni applicative", "Servizi privati"];
+const sceneIcons = [User, FileText, Users] as const;
+const fields = [
+  [User, "Chi agisce"],
+  [Send, "Cosa invia"],
+  [Network, "Chi risponde"],
+  [ArrowDownToLine, "Cosa cambia"],
+] as const;
+const first = perform("home", initialPortal, initialInputs);
+
+function SurfaceMap({ trace, inventory }: { trace: PortalExchange; inventory: string[] }) {
+  return (
+    <figure className="portal-map" aria-label="Mappa a cipolla del portale">
+      <figcaption>
+        <Layers size={18} aria-hidden="true" /> Mappa a cipolla
+      </figcaption>
+      <div className="portal-origin">
+        <User size={14} aria-hidden="true" /> {trace.actor}
+      </div>
+      <div className="portal-map-content">
+        <div className="onion" aria-hidden="true">
+          {layers.map((layer, i) => (
+            <div key={layer} className={`ring ring-${i}`} data-active={Boolean(trace.path[i])}>
+              <span>{i + 1}</span>
+            </div>
+          ))}
+          <strong className="portal-core">42.pdf</strong>
+        </div>
+        <ol className="portal-layers">
+          {layers.map((layer, i) => (
+            <li key={layer} data-active={Boolean(trace.path[i])}>
+              <b>{i + 1}</b>
+              <div>
+                <small>{layer}</small>
+                <strong>{trace.path[i] ?? "Fuori dal percorso"}</strong>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <details className="portal-inventory">
+        <summary>Ingressi osservati ({inventory.length})</summary>
+        <p>{inventory.join(" · ")}</p>
+        <p>
+          Il confine di fiducia è il punto in cui cambia chi deve autorizzare la richiesta. Per
+          esempio, per leggere il PDF lo storage riconosce il backend tramite le sue credenziali di
+          servizio.
+        </p>
+      </details>
+    </figure>
+  );
+}
+
+function ExchangeCard({ trace }: { trace: PortalExchange }) {
+  const values = [trace.actor, trace.request, trace.responder, trace.effect];
+  return (
+    <section
+      className="portal-card portal-exchange"
+      aria-label="Ultimo scambio"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <h3>{actions[trace.action]}</h3>
+      <dl>
+        {fields.map(([Icon, field], i) => {
+          return (
+            <div key={field}>
+              <dt>
+                <Icon size={16} aria-hidden="true" />
+                {field}
+              </dt>
+              <dd>
+                {i === 1 ? <code>{values[i]}</code> : values[i]}
+                {i === 2 && <code>{trace.response}</code>}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+    </section>
+  );
+}
+
+const quiz = [
+  { label: "Chi agisce", options: ["Giulia", "Il collega", "L’operatore"], correct: "Il collega" },
+  {
+    label: "Cosa invia",
+    options: ["Il token nel link", "La password di Giulia", "I byte del PDF"],
+    correct: "Il token nel link",
+  },
+  {
+    label: "Chi decide se rispondere con il file",
+    options: ["Lo schermo", "Il browser", "Il gestore delle condivisioni"],
+    correct: "Il gestore delle condivisioni",
+  },
+  {
+    label: "Cosa cambia",
+    options: [
+      "Si crea una nuova versione in archivio",
+      "Il collega riceve una copia",
+      "Il backup viene ripristinato",
+    ],
+    correct: "Il collega riceve una copia",
+  },
+];
+
+function FinalCheck() {
+  const [answers, setAnswers] = useState(quiz.map(() => ""));
+  const [checked, setChecked] = useState(false);
+  const correct = quiz.filter((q, i) => q.correct === answers[i]).length;
+  return (
+    <section className="portal-card" aria-label="Verifica finale">
+      <h3>Verifica finale</h3>
+      <p>
+        Un collega apre un link ancora valido a 42.pdf dal suo browser. Ricostruisci questo scambio.
+      </p>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          setChecked(true);
+        }}
+      >
+        <div className="portal-quiz">
+          {quiz.map((q, i) => (
+            <label key={q.label}>
+              {q.label}
+              <select
+                value={answers[i]}
+                onChange={(event) => {
+                  setAnswers(answers.map((a, j) => (i === j ? event.target.value : a)));
+                  setChecked(false);
+                }}
+              >
+                <option value="">Scegli…</option>
+                {q.options.map((o) => (
+                  <option key={o}>{o}</option>
+                ))}
+              </select>
+              {checked && q.correct !== answers[i] && <small>Da rivedere</small>}
+            </label>
+          ))}
+        </div>
+        <button type="submit" disabled={answers.some((a) => !a)}>
+          Verifica lo scambio
+        </button>
+      </form>
+      {checked && (
+        <p className="portal-feedback" role="status">
+          <strong>{correct}/4.</strong> Il browser del collega invia il token nel link. Il gestore
+          trova la concessione attiva per il file 42, legge i byte e ne restituisce una copia.
+          L’originale resta in archivio.
+        </p>
+      )}
+    </section>
+  );
+}
 
 export function Cybersecurity14Slide() {
-  const [trace, setTrace] = useState(home);
-  const [choice, setChoice] = useState<number | null>(null);
-  const [verified, setVerified] = useState(false);
-  const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
-  const [layer, setLayer] = useState(0);
-  const [page, setPage] = useState<"home" | "catalog" | "results">("home");
-  const [english, setEnglish] = useState(false);
-  const [term, setTerm] = useState("bilancio");
-  const [submitted, setSubmitted] = useState("");
-  const [loginCase, setLoginCase] = useState<Login>("valid");
-  const [signed, setSigned] = useState(false);
-  const [allowed, setAllowed] = useState(false);
-  const [failures, setFailures] = useState(0);
-  const [revision, setRevision] = useState(1);
-  const [uploads, setUploads] = useState(0);
-  const [revoked, setRevoked] = useState(false);
-  const [linkNumber, setLinkNumber] = useState(0);
-  const hasFile = page === "catalog" || (page === "results" && matches(submitted));
+  const [scene, setScene] = useState<Scene>(0);
+  const [portal, setPortal] = useState(first.portal);
+  const [inputs, setInputs] = useState(initialInputs);
+  const [trace, setTrace] = useState(first.trace);
+  const [observations, setObservations] = useState<PortalExchange[]>([first.trace]);
+  const inventory = [...new Set(observations.map((item) => item.path[0]))];
+  const [finalOpen, setFinalOpen] = useState(false);
 
-  function observe(event: Exchange) {
-    setTrace(event);
-    setVerified(false);
-    setChoice(null);
-  }
-
-  function verify() {
-    if (choice === null || verified) return;
-    const newNodes = trace.findings.filter(
-      ([, name]) => !discoveries.some((d) => d.finding[1] === name),
-    );
-    setDiscoveries([
-      ...discoveries,
-      ...newNodes.map((finding) => ({
-        finding,
-        evidence: trace.evidence,
-        source: trace.request.split("\n")[0] + " → " + trace.response.split("\n")[0],
-      })),
+  function observe(action: Action, settings = inputs) {
+    const next = perform(action, portal, settings);
+    setPortal(next.portal);
+    setTrace(next.trace);
+    setObservations((previous) => [
+      ...previous.filter(
+        (item) =>
+          item.action !== action ||
+          item.response.split(" ")[0] !== next.trace.response.split(" ")[0],
+      ),
+      next.trace,
     ]);
-    setLayer((newNodes.at(-1) ?? trace.findings[0])[0]);
-    setVerified(true);
   }
-
-  function login() {
-    if (signed) {
-      setSigned(false);
-      observe(
-        exchange(
-          "logout",
-          "POST /logout\nCookie: session=demo",
-          "204 No Content\nCookie di sessione scaduto",
-        ),
-      );
-      return;
-    }
-    const account = loginCase === "unknown" ? "utente-demo" : "Giulia";
-    const request = "POST /login\nAccount: " + account + "\nPassword: •••• (demo)";
-    if (failures >= 3) {
-      observe(exchange("limited", request, "429 Too Many Requests\nRetry-After: 60"));
-    } else if (loginCase !== "valid") {
-      setFailures(failures + 1);
-      observe(exchange("loginError", request, "401 Unauthorized\nCredenziali non valide"));
-    } else {
-      setSigned(true);
-      setFailures(0);
-      observe(
-        exchange("signed", request, "200 OK\nSet-Cookie: session=demo; HttpOnly; Secure\nGiulia"),
-      );
-    }
+  function enter(target: Scene) {
+    if (scene === target) return;
+    setScene(target);
+    observe(sceneActions[target][0]);
   }
-
-  function changeLanguage() {
-    const lang = english ? "it" : "en";
-    setEnglish(!english);
-    observe(
-      exchange(
-        "language",
-        "GET /locales/" + lang + ".json",
-        "200 OK · application/json\n" +
-          JSON.stringify({
-            catalog: english ? "Catalogo" : "Catalogue",
-            search: english ? "Cerca" : "Search",
-          }),
-      ),
-    );
+  function changePermission(allowed: boolean) {
+    const settings = { ...inputs, allowed };
+    setInputs(settings);
+    observe("read", settings);
   }
-
-  function search() {
-    const value = term.trim();
-    setSubmitted(value);
-    setPage("results");
-    observe(
-      exchange(
-        "search",
-        "GET /api/search?q=" + encodeURIComponent(value),
-        "200 OK · application/json\n" +
-          JSON.stringify({ term: value, results: matches(value) ? ["42.pdf"] : [] }),
-      ),
-    );
-  }
-
-  function upload() {
-    setUploads(uploads + 1);
-    setRevision(uploads + 2);
-    observe(
-      exchange(
-        "upload",
-        "POST /api/documents\nCookie: session=demo\nmultipart/form-data · id 42 · 42.pdf · byte PDF simulati",
-        "200 OK\n42.pdf · versione " + (uploads + 2),
-      ),
-    );
-  }
-
-  function share() {
-    setLinkNumber(linkNumber + 1);
-    setRevoked(false);
-    observe(
-      exchange(
-        "share",
-        "POST /api/documents/42/links\nCookie: session=demo",
-        `201 Created\n/s/demo-${linkNumber + 1} · lettura di 42.pdf`,
-      ),
-    );
+  function settings<K extends keyof Inputs>(key: K, value: Inputs[K]) {
+    setInputs((previous) => ({ ...previous, [key]: value }));
   }
 
   return (
     <article className="web-lesson portal-lesson">
       <PageHeader
         title="1.4 — Superfici di attacco e confini di fiducia"
-        subtitle="Esplora il portale di 42.pdf. Osserva uno scambio, scegli una spiegazione e confrontala con il comportamento del servizio simulato."
+        subtitle="Chi può interagire con 42.pdf dall’esterno? Ogni ingresso che accetta dati o comandi fa parte della superficie di attacco. Segui la richiesta dal primo anello fino al servizio che la gestisce."
       />
       <div className="portal-workbench">
-        <section
-          id="portal42-window"
-          className="portal-window"
-          aria-label="Portale simulato di 42.pdf"
-        >
-          <div className="portal-address">
-            <Globe aria-hidden="true" /> files.example <span>Simulazione locale</span>
-          </div>
-          <div className="portal-body">
-            <div className="portal-heading">
-              <h2>{english ? "Document portal" : "Portale documenti"}</h2>
-              <span>{signed ? "Giulia" : english ? "Guest" : "Visitatore"}</span>
-            </div>
-            <nav className="web-options" aria-label="Pagine del portale">
-              <button
-                type="button"
-                aria-current={page === "home" ? "page" : undefined}
-                onClick={() => {
-                  setPage("home");
-                  observe(home());
-                }}
-              >
-                Home
-              </button>
-              <button
-                type="button"
-                aria-current={page === "catalog" ? "page" : undefined}
-                onClick={() => {
-                  setPage("catalog");
-                  observe(catalog());
-                }}
-              >
-                {english ? "Catalogue" : "Catalogo"}
-              </button>
-              <button type="button" onClick={changeLanguage}>
-                {english ? "Lingua: Italiano" : "Lingua: English"}
-              </button>
-            </nav>
-            <form
-              className="portal-search"
-              onSubmit={(e) => {
-                e.preventDefault();
-                search();
-              }}
-            >
-              <label htmlFor="portal42-search">
-                {english ? "Search the public catalogue" : "Cerca nel catalogo pubblico"}
-              </label>
-              <div>
-                <input
-                  id="portal42-search"
-                  maxLength={80}
-                  value={term}
-                  onChange={(e) => setTerm(e.target.value)}
-                />
-                <button type="submit">
-                  <Search aria-hidden="true" />
-                  {english ? "Search" : "Cerca"}
+        <SurfaceMap trace={trace} inventory={inventory} />
+        <div className="portal-scenes">
+          <nav aria-label="Scene del portale" className="portal-nav">
+            {scenes.map((s, i) => {
+              const Icon = sceneIcons[i as Scene];
+              return (
+                <button
+                  key={s.name}
+                  aria-current={scene === i ? "step" : undefined}
+                  onClick={() => enter(i as Scene)}
+                >
+                  <Icon size={18} aria-hidden="true" />
+                  {i + 1} · {s.name}
                 </button>
-              </div>
-            </form>
-            <div className="portal-listing">
-              {page === "home" && (
-                <p>
-                  {english
-                    ? "Open the catalogue to see the public file listing."
-                    : "Apri il catalogo per vedere la scheda pubblica del file."}
-                </p>
-              )}
-              {page === "results" && (
-                <p>
-                  {english ? "Results for" : "Risultati per"} «{submitted}» · {hasFile ? 1 : 0}
-                </p>
-              )}
-              {hasFile && (
-                <div className="portal-document">
-                  <FileText aria-hidden="true" />
-                  <div>
-                    <strong>42.pdf</strong>
-                    <small>{english ? "Annual report" : "Bilancio annuale"}</small>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => observe(readFile(signed, allowed, revision))}
-                  >
-                    {english ? "Open PDF" : "Apri PDF"}
-                  </button>
-                </div>
-              )}
-            </div>
-            {(trace.kind === "allowed" ||
-              trace.kind === "preview" ||
-              trace.kind === "sharedRead") && (
-              <div className="portal-paper" aria-label="Rappresentazione simulata del PDF">
-                <FileText aria-hidden="true" />
-                <small>{trace.kind === "preview" ? "Miniatura" : "PDF ricevuto"}</small>
-                <strong>Bilancio annuale</strong>
-                <span>42.pdf · versione {revision}</span>
-              </div>
-            )}
-            {(trace.kind === "visitor" ||
-              trace.kind === "denied" ||
-              trace.kind === "loginError" ||
-              trace.kind === "limited") && (
-              <p className="portal-feedback">
-                {trace.kind === "visitor"
-                  ? "Accedi per aprire il file."
-                  : trace.kind === "denied"
-                    ? "Lettura del file non consentita."
-                    : trace.kind === "limited"
-                      ? "Accesso temporaneamente sospeso. Riprova tra 60 secondi."
-                      : "Credenziali non valide."}
+              );
+            })}
+          </nav>
+          <section className="portal-card" aria-label="Azioni del portale">
+            <small>Scena {scene + 1} di 3 · Portale simulato</small>
+            <h2>{scenes[scene].name}</h2>
+            <p>{scenes[scene].intro}</p>
+            {scene === 1 && (
+              <p className="portal-context">
+                Giulia può aggiornare e condividere il file. Il permesso di lettura si può cambiare
+                per confrontare le due risposte.
               </p>
             )}
-            <div className="portal-account">
-              <label htmlFor="portal42-account">
-                {english ? "Demo account" : "Account dimostrativo"}
-              </label>
-              <div className="web-options">
-                {!signed && (
-                  <select
-                    id="portal42-account"
-                    aria-label="Credenziali simulate"
-                    value={loginCase}
-                    onChange={(e) => setLoginCase(e.target.value as Login)}
-                  >
-                    <option value="valid">Giulia · credenziali valide</option>
-                    <option value="password">Giulia · password errata</option>
-                    <option value="unknown">Account sconosciuto</option>
-                  </select>
-                )}
-                <button type="button" onClick={login}>
-                  {signed ? "Esci" : "Accedi come demo"}
-                </button>
-                {!signed && failures >= 3 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFailures(0);
-                    }}
-                  >
-                    Avanza di 60 s nel simulatore
-                  </button>
-                )}
-              </div>
-              {signed && (
-                <div className="portal-permit">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={allowed}
-                      onChange={(e) => {
-                        setAllowed(e.target.checked);
-                        observe(readFile(true, e.target.checked, revision));
-                      }}
-                    />{" "}
-                    Consenti a Giulia la lettura di 42.pdf e riprova
-                  </label>
-                </div>
-              )}
-            </div>
-            <div className="portal-upload">
-              <strong>
-                <Upload aria-hidden="true" /> {english ? "Upload" : "Caricamento"}
-              </strong>
-              <p>
-                {signed
-                  ? "Giulia può aggiornare il file. Usa il PDF dimostrativo già selezionato."
-                  : "Accedi con Giulia per aggiornare il PDF dimostrativo."}
+            {scene === 2 && (
+              <p className="portal-context">
+                Il collega ha il link /s/demo-{portal.link},{" "}
+                {portal.revoked ? "revocato" : "attivo"}.{" "}
+                {portal.link === 1
+                  ? "Era già stato emesso all’inizio della simulazione."
+                  : "È il link emesso da Giulia."}{" "}
+                La versione corrente del PDF è v{portal.version}.
               </p>
-              <button type="button" disabled={!signed} onClick={upload}>
-                Carica una versione di 42.pdf
-              </button>
-              {uploads > 0 && (
-                <div className="web-options" role="group" aria-label="Altre operazioni sul file">
-                  <button
-                    type="button"
-                    disabled={!signed || !allowed}
-                    onClick={() =>
-                      observe(
-                        exchange(
-                          "preview",
-                          "GET /api/documents/42/preview\nCookie: session=demo",
-                          "200 OK · image/png\nMiniatura della versione " + revision,
-                        ),
-                      )
-                    }
-                  >
-                    Genera anteprima
-                  </button>
-                  <button type="button" disabled={!signed || !allowed} onClick={share}>
-                    {linkNumber > 0 ? "Crea un nuovo link" : "Crea link condiviso"}
-                  </button>
-                  {linkNumber > 0 && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          observe(
-                            revoked
-                              ? exchange(
-                                  "sharedGone",
-                                  `GET /s/demo-${linkNumber} · browser del collega`,
-                                  "410 Gone\nNessun byte del PDF",
-                                )
-                              : exchange(
-                                  "sharedRead",
-                                  `GET /s/demo-${linkNumber} · browser del collega`,
-                                  "200 OK · application/pdf\n42.pdf · versione " + revision,
-                                ),
-                          )
-                        }
+            )}
+            <div className="portal-actions">
+              {sceneActions[scene].map((action) => (
+                <div key={action} className="portal-action">
+                  {action === "search" && (
+                    <label>
+                      Termine da cercare
+                      <input
+                        value={inputs.term}
+                        onChange={(e) => settings("term", e.target.value)}
+                      />
+                    </label>
+                  )}
+                  {action === "login" && (
+                    <label>
+                      Credenziali simulate
+                      <select
+                        value={inputs.validCredentials ? "valid" : "invalid"}
+                        onChange={(e) => settings("validCredentials", e.target.value === "valid")}
                       >
-                        Apri link come collega
-                      </button>
-                      <button
-                        type="button"
-                        disabled={revoked || !signed}
-                        onClick={() => {
-                          setRevoked(true);
-                          observe(
-                            exchange(
-                              "revoke",
-                              `DELETE /api/documents/42/links/demo-${linkNumber}\nCookie: session=demo`,
-                              "204 No Content\nConcessione revocata",
-                            ),
-                          );
-                        }}
-                      >
-                        Revoca il link
-                      </button>
-                    </>
+                        <option value="valid">Password corretta</option>
+                        <option value="invalid">Password errata</option>
+                      </select>
+                    </label>
+                  )}
+                  {action === "read" && (
+                    <label className="portal-permission">
+                      <input
+                        type="checkbox"
+                        checked={inputs.allowed}
+                        onChange={(e) => changePermission(e.target.checked)}
+                      />
+                      Permesso di lettura su 42.pdf
+                    </label>
                   )}
                   <button
-                    type="button"
-                    onClick={() => {
-                      setRevision(1);
-                      observe(
-                        exchange(
-                          "restore",
-                          "POST /admin/restores\nSessione: operatore demo\nFile 42 · copia v1",
-                          "200 OK\nVersione corrente ripristinata: 1",
-                        ),
-                      );
-                    }}
+                    aria-pressed={action === trace.action}
+                    disabled={action === "revoke" && portal.revoked}
+                    onClick={() => observe(action)}
                   >
-                    Ripristina v1 come operatore demo
+                    {action === "visitor" && portal.english
+                      ? "Download · senza sessione"
+                      : actions[action]}
                   </button>
+                  {action === "login" && portal.failures >= 3 && (
+                    <button
+                      onClick={() => {
+                        setPortal({ ...portal, failures: 0 });
+                      }}
+                    >
+                      Avanza di 60 s
+                    </button>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-            <a className="portal-jump" href="#portal42-trace">
-              Osserva lo scambio ↓
-            </a>
-          </div>
-        </section>
-        <section
-          id="portal42-trace"
-          className="portal-inspector"
-          aria-label="Taccuino di osservazione"
-        >
-          <h2>Scambio osservato</h2>
-          <div aria-live="polite">
-            <h3>Richiesta</h3>
-            <pre>{trace.request}</pre>
-            <h3>Risposta</h3>
-            <pre>{trace.response}</pre>
-          </div>
-          <fieldset className="portal-choices">
-            <legend>{trace.question}</legend>
-            {trace.hypotheses.map((option, i) => (
-              <label key={option}>
-                <input
-                  type="radio"
-                  name="portal42-hypothesis"
-                  disabled={verified}
-                  checked={choice === i}
-                  onChange={() => setChoice(i)}
-                />
-                {option}
-              </label>
-            ))}
-          </fieldset>
-          <button type="button" disabled={choice === null || verified} onClick={verify}>
-            Verifica l’ipotesi
-          </button>
-          <div role="status" aria-label="Verifica del portale">
-            {verified && (
-              <div className="portal-proof">
-                <strong>
-                  {choice === trace.correct ? "Ipotesi confermata" : "Ipotesi smentita"}
-                </strong>
-                <pre aria-label="Traccia interna simulata">{trace.evidence}</pre>
-                <p>{trace.proof}</p>
-                <small>Sulla mappa · {trace.findings.map(([, name]) => name).join(" · ")}</small>
-              </div>
-            )}
-          </div>
-          <a className="portal-jump" href="#portal42-window">
-            Torna al portale ↑
-          </a>
-        </section>
-      </div>
-      <HudPanel heading="La tua mappa a cipolla">
-        <div className="web-split" aria-label="Scoperte verificate">
-          <figure className="web-map" aria-label="Mappa a cipolla del portale">
-            <div className="onion">
-              {layerNames.map((name, i) => {
-                const nodes = discoveries.filter((d) => d.finding[0] === i);
-                return nodes.length ? (
-                  <button
-                    key={name}
-                    type="button"
-                    className={"ring ring-" + i}
-                    aria-pressed={i === layer}
-                    aria-label={name}
-                    onClick={() => setLayer(i)}
-                  >
-                    <span>
-                      {name}
-                      <small>
-                        {nodes.length} {nodes.length === 1 ? "scoperta" : "scoperte"}
-                      </small>
-                    </span>
-                  </button>
-                ) : null;
-              })}
-              <div className="portal-map-file">
-                <FileText aria-hidden="true" />
-                <strong>42.pdf</strong>
-              </div>
-            </div>
-            <figcaption>
-              {discoveries.length
-                ? "Seleziona un anello per rivedere le evidenze raccolte."
-                : "La prima verifica farà comparire un anello."}
-            </figcaption>
-          </figure>
-          <section
-            className="web-detail"
-            aria-live="polite"
-            aria-label="Inventario delle superfici"
-          >
-            <h3>{discoveries.length ? layerNames[layer] : "Nessuna superficie verificata"}</h3>
-            {discoveries.length ? (
-              <ul className="portal-findings">
-                {discoveries
-                  .filter((d) => d.finding[0] === layer)
-                  .map((d) => (
-                    <li key={d.finding[1]}>
-                      <strong>{d.finding[1]}</strong>
-                      <code>{d.source}</code>
-                      <small>{d.evidence}</small>
-                    </li>
-                  ))}
-              </ul>
-            ) : (
-              <p>
-                Nel taccuino trovi già la risposta che ha aperto la home. Scegli un’ipotesi e
-                verificala, poi continua a esplorare.
-              </p>
-            )}
           </section>
+          <ExchangeCard trace={trace} />
+          <details className="portal-record">
+            <summary>Rivedi gli scambi osservati ({observations.length})</summary>
+            <ul>
+              {observations.map((item) => (
+                <li key={item.action + item.response.split(" ")[0]}>
+                  <strong>
+                    {item.actor} · {actions[item.action]}
+                  </strong>
+                  <code>
+                    {item.request.split("\n")[0]} → {item.response}
+                  </code>
+                </li>
+              ))}
+            </ul>
+          </details>
+          {scene !== 2 ? (
+            <button className="portal-next" onClick={() => enter(scene === 0 ? 1 : 2)}>
+              Prosegui · {scenes[scene === 0 ? 1 : 2].name}
+              <ArrowRight size={17} />
+            </button>
+          ) : (
+            <>
+              <button
+                className="portal-next"
+                aria-expanded={finalOpen}
+                onClick={() => setFinalOpen(!finalOpen)}
+              >
+                {finalOpen ? "Chiudi la verifica finale" : "Vai alla verifica finale"}
+                <ArrowRight size={17} />
+              </button>
+              <div hidden={!finalOpen}>
+                <FinalCheck />
+              </div>
+            </>
+          )}
         </div>
-      </HudPanel>
+      </div>
     </article>
   );
-}
-
-function matches(term: string) {
-  return "42.pdf bilancio annuale annual report".includes(term.toLowerCase());
 }

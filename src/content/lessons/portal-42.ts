@@ -1,272 +1,277 @@
 import { readCases, readRequest } from "./cybersecurity-1-4";
 
-export const layerNames = ["Interfaccia pubblica", "Funzioni web", "Servizi interni"] as const;
-export type Finding = readonly [layer: 0 | 1 | 2, name: string];
-type Evidence = {
-  question: string;
-  hypotheses: readonly [string, string];
-  correct: 0 | 1;
-  proof: string;
-  evidence: string;
-  findings: readonly Finding[];
-};
-const cases = {
-  home: {
-    evidence: "Route / → pagina HTML",
-    question: "Che cosa ha ricevuto il browser?",
-    hypotheses: ["La pagina iniziale del portale.", "I byte di tutti i file elencati nel sito."],
-    correct: 0,
-    proof:
-      "Il gestore di / invia HTML con i comandi del portale. La traccia termina qui: per leggere il PDF occorre un’altra richiesta.",
-    findings: [[0, "Pagina iniziale"]],
+export const scenes = [
+  {
+    name: "Visitatore",
+    intro:
+      "Giulia visita il portale per la prima volta. Cerca 42.pdf nel catalogo pubblico, poi prova a scaricarlo prima di accedere.",
   },
-  catalog: {
-    evidence: "Scheda pubblica #42 → collegamento /api/documents/42",
-    question: "Vedere 42.pdf nell’elenco dimostra che puoi scaricarlo?",
-    hypotheses: [
-      "Sì, il PDF è già nella pagina.",
-      "Il catalogo contiene una scheda pubblica. La lettura ha un ingresso proprio.",
-    ],
-    correct: 1,
-    proof:
-      "Il template del catalogo contiene nome e ID del file e un collegamento alla risorsa 42. Il corpo della risposta è HTML. Prova «Apri 42.pdf» per osservare la decisione sulla lettura.",
-    findings: [[0, "Catalogo HTML"]],
+  {
+    name: "Giulia con sessione",
+    intro:
+      "Qui il browser ha una sessione valida di Giulia. Prova la stessa lettura con e senza permesso, poi osserva cosa succede quando Giulia scrive o condivide.",
   },
-  language: {
-    evidence: "Lingue ammesse: it → it.json · en → en.json",
-    question: "Come sceglie la traduzione questo portale?",
-    hypotheses: [
-      "Una tabella associa le lingue disponibili a risorse predefinite.",
-      "Il backend apre un percorso arbitrario scelto dal visitatore.",
-    ],
-    correct: 0,
-    proof:
-      "La configurazione del frontend contiene due voci: it ed en. La scelta seleziona una risorsa JSON pubblica. Il browser legge il dizionario e aggiorna le etichette della pagina.",
-    findings: [[0, "Dizionari di lingua"]],
+  {
+    name: "Altri attori esterni",
+    intro:
+      "Un collega riceve un link, un programma usa l’API e un operatore entra dalla console. Ognuno presenta al servizio una prova diversa della propria autorizzazione.",
   },
-  loginError: {
-    evidence: "Account assente → 401 · password errata → 401 · stesso corpo",
-    question: "L’errore permette di capire se l’account esiste?",
-    hypotheses: [
-      "Il messaggio conferma che l’account esiste.",
-      "I due tipi di errore possono produrre lo stesso messaggio.",
-    ],
-    correct: 1,
-    proof:
-      "Nel ramo «account sconosciuto» e nel ramo «password errata» il gestore restituisce lo stesso stato e lo stesso testo. Puoi confrontare i due casi con il selettore. Un singolo errore non mostra quale limite ai tentativi sia configurato.",
-    findings: [[1, "Login"]],
-  },
-  limited: {
-    evidence: "Contatore del client: 3 errori → attesa 60 s → verifica credenziali sospesa",
-    question: "Il server ha valutato queste credenziali?",
-    hypotheses: [
-      "Ha verificato la password e l’ha rifiutata.",
-      "Ha applicato prima il limite temporaneo.",
-    ],
-    correct: 1,
-    proof:
-      "Nel modello, dopo tre errori consecutivi dallo stesso client, il gestore sospende per 60 secondi la valutazione di nuovi tentativi. Retry-After indica l’attesa residua. Puoi far avanzare l’orologio simulato.",
-    findings: [[1, "Limite ai tentativi"]],
-  },
-  signed: {
-    evidence: "Sessione demo → identità Giulia · permesso sul file ancora da valutare",
-    question: "Che cosa dimostra il login riuscito?",
-    hypotheses: [
-      "Il backend può associare le richieste successive a Giulia.",
-      "Giulia può leggere ogni file del portale.",
-    ],
-    correct: 0,
-    proof:
-      "Il server crea una sessione e restituisce il cookie al browser. Il gestore della lettura dovrà ancora verificare il permesso su 42.pdf.",
-    findings: [
-      [1, "Login"],
-      [1, "Sessione"],
-    ],
-  },
-  logout: {
-    evidence: "Sessione demo invalidata → risposta senza corpo",
-    question: "Cosa cambia per la prossima richiesta del PDF?",
-    hypotheses: [
-      "Il server considererà ancora Giulia autenticata.",
-      "Il browser dovrà presentare una nuova sessione valida.",
-    ],
-    correct: 1,
-    proof:
-      "Il server invalida la sessione del portale e fa scadere il cookie. La scheda pubblica del file resta consultabile.",
-    findings: [[1, "Sessione"]],
-  },
-  visitor: {
-    evidence: "Sessione assente → 401 · storage non chiamato",
-    question: "Chi ha fermato la lettura?",
-    hypotheses: [
-      "Lo storage ha già ricevuto la richiesta.",
-      "Il backend richiede una sessione prima di cercare i permessi.",
-    ],
-    correct: 1,
-    proof: readCases.visitor.why,
-    findings: [
-      [0, "Ingresso HTTPS"],
-      [1, "Lettura del file"],
-      [1, "Sessione"],
-    ],
-  },
-  denied: {
-    evidence: "Giulia → scheda 42 → lettura negata · storage non chiamato",
-    question: "Perché questa volta la risposta è 403?",
-    hypotheses: [
-      "Giulia è riconosciuta, ma manca il permesso sul file 42.",
-      "Il PDF è stato cancellato.",
-    ],
-    correct: 0,
-    proof: readCases.denied.why,
-    findings: [
-      [1, "Lettura del file"],
-      [1, "Autorizzazione"],
-      [2, "Database dei metadati"],
-    ],
-  },
-  allowed: {
-    evidence: "Giulia → permesso di lettura → identità del backend → files/42.pdf",
-    question: "Quale identità presenta la lettura allo storage?",
-    hypotheses: [
-      "Lo storage riceve il cookie del browser.",
-      "Il backend usa le proprie credenziali dopo aver autorizzato Giulia.",
-    ],
-    correct: 1,
-    proof: readCases.allowed.why,
-    findings: [
-      [1, "Autorizzazione"],
-      [1, "Lettura del file"],
-      [2, "Database dei metadati"],
-      [2, "Storage privato"],
-    ],
-  },
-  search: {
-    evidence:
-      "Backend: parametro di ricerca → database dei metadati\nBrowser: termine ricevuto → nodo di testo",
-    question: "Il termine ricompare nei risultati. Come viene trattato?",
-    hypotheses: [
-      "Vedere il termine basta a dimostrare che viene eseguito come codice.",
-      "Può essere un valore nella query e semplice testo nella pagina.",
-    ],
-    correct: 1,
-    proof:
-      "Nel modello il backend passa il termine come parametro a una query predefinita sui metadati pubblici. Il browser inserisce il termine in un nodo di testo. La ricerca e la riflessione del termine, da sole, non dimostrano SQL injection o XSS.",
-    findings: [
-      [0, "Pagina dei risultati"],
-      [1, "Ricerca"],
-      [2, "Database dei metadati"],
-    ],
-  },
-  upload: {
-    evidence: "Giulia → permesso di scrittura → controlli sul PDF → versione in archivio",
-    question: "Quale nuovo dato ha attraversato il confine verso il backend?",
-    hypotheses: ["Solo il numero 42.", "Il nome e i byte scelti da Giulia."],
-    correct: 1,
-    proof:
-      "Il gestore controlla il permesso di aggiornamento, il formato e la dimensione del PDF dimostrativo. Scrive la nuova versione nello storage. La stessa porta HTTPS ora riceve contenuti da elaborare.",
-    findings: [
-      [1, "Upload"],
-      [2, "Storage privato"],
-    ],
-  },
-  preview: {
-    evidence: "File 42 → generatore di miniature → immagine PNG",
-    question: "Chi deve interpretare il PDF per mostrare la miniatura?",
-    hypotheses: [
-      "Il generatore interno legge la prima pagina.",
-      "Il browser riceve di nuovo tutto il PDF.",
-    ],
-    correct: 0,
-    proof:
-      "Il backend controlla il permesso di lettura e incarica il generatore. Con un’identità tecnica limitata, il generatore legge il PDF e crea la miniatura. Al browser torna un’immagine.",
-    findings: [
-      [1, "Anteprima"],
-      [2, "Generatore di miniature"],
-    ],
-  },
-  share: {
-    evidence: "Giulia → concessione di sola lettura → link per il file 42",
-    question: "Come viene autorizzato il destinatario del link in questo esempio?",
-    hypotheses: [
-      "Con la sessione di Giulia.",
-      "Il servizio verifica un token di sola lettura legato al file.",
-    ],
-    correct: 1,
-    proof:
-      "Giulia ha il permesso di condividere. Il servizio crea un token revocabile per il file 42. Chi apre il link presenta quel token al gestore, che verifica la concessione prima della lettura.",
-    findings: [[1, "Condivisione"]],
-  },
-  revoke: {
-    evidence: "Giulia → revoca della concessione → token inattivo",
-    question: "Che cosa può ottenere il destinatario riprovando lo stesso link?",
-    hypotheses: [
-      "Il servizio ferma la nuova lettura.",
-      "La revoca rimuove anche le copie già scaricate.",
-    ],
-    correct: 0,
-    proof:
-      "La concessione è revocata. Se il collega riapre il link, la nuova richiesta si fermerà al gestore. Le copie già consegnate al destinatario rimangono sul suo dispositivo.",
-    findings: [[1, "Condivisione"]],
-  },
-  sharedRead: {
-    evidence: "Token attivo → gestore della condivisione → storage → browser del collega",
-    question: "Da dove deriva il permesso del collega?",
-    hypotheses: [
-      "Dal token valido presentato al gestore del link.",
-      "Dal cookie di Giulia, copiato nel suo browser.",
-    ],
-    correct: 0,
-    proof:
-      "Il gestore trova la concessione di sola lettura associata al token e al file 42. Chiede i byte con l’identità del servizio e li restituisce al browser del collega.",
-    findings: [
-      [1, "Lettura da link"],
-      [2, "Storage privato"],
-    ],
-  },
-  sharedGone: {
-    evidence: "Token revocato → 410 · storage non chiamato",
-    question: "Dove si è fermata questa nuova richiesta?",
-    hypotheses: ["Nello storage durante la lettura dei byte.", "Al controllo del token revocato."],
-    correct: 1,
-    proof:
-      "Il gestore rifiuta il token prima di chiamare lo storage. Il browser del collega riceve la risposta 410. Le copie scaricate prima della revoca restano sul dispositivo.",
-    findings: [[1, "Lettura da link"]],
-  },
-  restore: {
-    evidence: "Operatore demo → permesso di ripristino → copia v1 → storage",
-    question: "Quale identità può sostituire la versione corrente?",
-    hypotheses: [
-      "Ogni visitatore del catalogo.",
-      "Un operatore autorizzato tramite il servizio di ripristino.",
-    ],
-    correct: 1,
-    proof:
-      "La console amministrativa verifica l’operatore demo. Il servizio di ripristino legge la versione iniziale dal backup e la scrive nello storage. Questo ingresso privilegiato è indipendente dalla sessione web di Giulia.",
-    findings: [
-      [1, "Console di ripristino"],
-      [2, "Backup"],
-      [2, "Storage privato"],
-    ],
-  },
-} as const satisfies Record<string, Evidence>;
+] as const;
 
-type Case = keyof typeof cases;
-export function exchange(kind: Case, request: string, response: string) {
-  return { kind, request, response, ...cases[kind] };
+export const actions = {
+  home: "Visita la home",
+  catalog: "Apri il catalogo",
+  language: "Cambia lingua",
+  search: "Cerca nel catalogo",
+  visitor: "Scarica senza sessione",
+  login: "Accedi come Giulia",
+  read: "Scarica 42.pdf",
+  upload: "Carica una nuova versione",
+  preview: "Genera anteprima",
+  share: "Crea un link",
+  revoke: "Revoca il link",
+  colleague: "Apri il link come collega",
+  api: "Scarica tramite API",
+  restore: "Ripristina dal backup",
+} as const;
+
+export type Action = keyof typeof actions;
+export type Scene = 0 | 1 | 2;
+export const sceneActions = [
+  ["home", "catalog", "language", "search", "visitor", "login"],
+  ["read", "upload", "preview", "share", "revoke"],
+  ["colleague", "api", "restore"],
+] as const satisfies readonly (readonly Action[])[];
+
+// Each path names the public entry, then (if reached) the application and its private services.
+type Path = readonly [string, string?, string?];
+type Exchange = {
+  action: Action;
+  actor: string;
+  request: string;
+  responder: string;
+  response: string;
+  effect: string;
+  path: Path;
+};
+const guest = "Giulia dal browser, senza sessione";
+const signed = "Giulia dal browser, con sessione";
+const cookie = "\nCookie: session=giulia-demo";
+const pdf = (version: number) => `200 OK · application/pdf · versione ${version}`;
+
+export const initialPortal = {
+  version: 1,
+  lastVersion: 1,
+  english: false,
+  // A previously issued example lets the third scene run independently.
+  link: 1,
+  revoked: false,
+  failures: 0,
+};
+export type Portal = typeof initialPortal;
+export type Inputs = { term: string; allowed: boolean; validCredentials: boolean };
+export const initialInputs: Inputs = { term: "42.pdf", allowed: false, validCredentials: true };
+
+export function perform(action: Action, portal: Portal, inputs: Inputs) {
+  function result(
+    actor: string,
+    request: string,
+    responder: string,
+    response: string,
+    effect: string,
+    path: Path,
+    changes: Partial<Portal> = {},
+  ): { trace: Exchange; portal: Portal } {
+    return {
+      trace: { action, actor, request, responder, response, effect, path },
+      portal: { ...portal, ...changes },
+    };
+  }
+  switch (action) {
+    case "home":
+      return result(
+        guest,
+        "GET /",
+        "Il server web serve la pagina iniziale.",
+        "200 OK · text/html",
+        "Il browser disegna la home. Il collegamento al catalogo permette a Giulia di chiedere l’elenco dei file.",
+        ["Home"],
+      );
+    case "catalog":
+      return result(
+        guest,
+        "GET /documenti",
+        "Il gestore del catalogo compone la pagina con le schede pubbliche.",
+        "200 OK · text/html · 42.pdf",
+        "Giulia vede il nome del file e il pulsante di download. Per ottenere i byte il browser deve fare una seconda richiesta.",
+        ["Catalogo", "Elenco pubblico", "Metadati"],
+      );
+    case "language": {
+      const language = portal.english ? "it" : "en";
+      return result(
+        guest,
+        `GET /locales/${language}.json`,
+        "Il server web serve il dizionario scelto fra le due lingue del portale.",
+        "200 OK · application/json",
+        portal.english
+          ? "Il browser legge il dizionario italiano. Il comando «Download» diventa «Scarica»."
+          : "Il browser legge il dizionario inglese. Il comando «Scarica» diventa «Download».",
+        ["Dizionario pubblico"],
+        { english: !portal.english },
+      );
+    }
+    case "search": {
+      const term = inputs.term.trim();
+      const found = "42.pdf bilancio annuale".includes(term.toLowerCase());
+      return result(
+        guest,
+        "GET /api/search?q=" + encodeURIComponent(term),
+        "Il servizio di ricerca confronta il termine con i metadati pubblici.",
+        "200 OK · application/json",
+        found
+          ? "Nei risultati compare la scheda di 42.pdf. Il browser ha ricevuto nome e ID del file."
+          : "Il browser mostra un elenco vuoto perché nessuna scheda corrisponde al termine.",
+        ["Ricerca", "Ricerca pubblica", "Metadati"],
+      );
+    }
+    case "visitor":
+    case "read": {
+      const kind = action === "visitor" ? "visitor" : inputs.allowed ? "allowed" : "denied";
+      const read = readCases[kind];
+      return result(
+        action === "visitor" ? guest : signed,
+        readRequest + (action === "visitor" ? "" : cookie),
+        kind === "allowed"
+          ? "Il backend autorizza Giulia, legge il PDF dallo storage e risponde tramite il proxy."
+          : read.title,
+        kind === "allowed" ? pdf(portal.version) : read.status,
+        read.why,
+        kind === "visitor"
+          ? ["Download", "Sessione"]
+          : ["Download", "Autorizzazione", kind === "allowed" ? "Metadati e storage" : "Metadati"],
+      );
+    }
+    case "login": {
+      const request = "POST /login\nAccount: Giulia · password dimostrativa";
+      const path: Path = ["Login", "Autenticazione"];
+      if (portal.failures >= 3)
+        return result(
+          guest,
+          request,
+          "Il gestore del login applica l’attesa prevista.",
+          "429 Too Many Requests · Retry-After: 60",
+          "La sessione resta assente. Fai avanzare l’orologio della simulazione di un minuto per riprovare.",
+          path,
+        );
+      if (!inputs.validCredentials)
+        return result(
+          guest,
+          request,
+          "Il gestore del login verifica le credenziali.",
+          "401 Unauthorized",
+          "La password fornita non corrisponde. Il browser riceve un errore e resta senza sessione.",
+          path,
+          { failures: portal.failures + 1 },
+        );
+      return result(
+        guest,
+        request,
+        "Il gestore del login verifica le credenziali e crea la sessione.",
+        "200 OK · Set-Cookie: session=giulia-demo",
+        "Il browser riceve il cookie che identifica Giulia nelle richieste successive. Segui quella sessione nella seconda scena.",
+        path,
+        { failures: 0 },
+      );
+    }
+    case "upload": {
+      const version = portal.lastVersion + 1;
+      return result(
+        signed,
+        "POST /api/documents" + cookie + "\nmultipart/form-data · ID 42, nome e byte del PDF",
+        "Il servizio di upload verifica il permesso di scrittura, il formato e la dimensione, poi archivia i byte.",
+        "200 OK · versione " + version,
+        `La versione corrente passa da v${portal.version} a v${version}. Il prossimo download autorizzato restituirà i nuovi byte.`,
+        ["Upload", "Scrittura", "Storage privato"],
+        { version, lastVersion: version },
+      );
+    }
+    case "preview":
+      if (!inputs.allowed)
+        return result(
+          signed,
+          "GET /api/documents/42/preview" + cookie,
+          "Il backend verifica il permesso di lettura sul file.",
+          "403 Forbidden",
+          "La richiesta si ferma al controllo dei permessi. Il generatore di miniature resta inattivo.",
+          ["Anteprima", "Autorizzazione", "Metadati"],
+        );
+      return result(
+        signed,
+        "GET /api/documents/42/preview" + cookie,
+        "Il backend autorizza la lettura e chiede al generatore di convertire la prima pagina.",
+        "200 OK · image/png",
+        `Giulia riceve una miniatura della versione ${portal.version}. Il generatore interno ha dovuto leggere il PDF per produrla.`,
+        ["Anteprima", "Anteprima file", "Generatore e storage"],
+      );
+    case "share": {
+      const link = portal.link + 1;
+      return result(
+        signed,
+        "POST /api/documents/42/links" + cookie,
+        "Il gestore delle condivisioni verifica il permesso e registra un token di lettura.",
+        `201 Created · /s/demo-${link}`,
+        "Giulia riceve un link da inviare al collega. Nel portale demo è valido un solo link per file e quello nuovo sostituisce il precedente.",
+        ["Link del file", "Condivisione", "Registro dei link"],
+        { link, revoked: false },
+      );
+    }
+    case "revoke":
+      return result(
+        signed,
+        `DELETE /api/documents/42/links/demo-${portal.link}` + cookie,
+        "Il gestore delle condivisioni verifica il permesso e disattiva il token.",
+        "204 No Content",
+        "Il collega che riapre questo link non riceve altri byte. Le copie già scaricate restano sul suo dispositivo.",
+        ["Revoca link", "Condivisione", "Registro dei link"],
+        { revoked: true },
+      );
+    case "colleague":
+      return result(
+        "Collega dal proprio browser",
+        `GET /s/demo-${portal.link}\nToken nel link · senza cookie di Giulia`,
+        "Il gestore delle condivisioni cerca il token e controlla se dà ancora accesso al file 42.",
+        portal.revoked ? "410 Gone" : pdf(portal.version),
+        portal.revoked
+          ? "Il token è revocato. Il gestore si ferma dopo aver letto il registro dei link, prima di chiedere il PDF allo storage."
+          : `Il token è attivo. Il servizio legge 42.pdf dallo storage e consegna al collega una copia della versione ${portal.version}.`,
+        [
+          "Link ricevuto",
+          "Condivisione",
+          portal.revoked ? "Registro dei link" : "Registro e storage",
+        ],
+      );
+    case "api":
+      return result(
+        "Programma esterno autorizzato",
+        readRequest + "\nAuthorization: Bearer api-demo",
+        "Il backend riconosce il programma dal token e verifica il suo permesso di lettura sul file.",
+        pdf(portal.version),
+        "Il programma riceve i byte sulla stessa rotta usata da Giulia. Può scaricare il file senza aprire la pagina del portale.",
+        ["Download", "Autorizzazione", "Metadati e storage"],
+      );
+    case "restore":
+      return result(
+        "Operatore dalla console amministrativa",
+        "POST /admin/restores\nSessione operatore · file 42 · copia v1",
+        "Il servizio di ripristino verifica il privilegio dell’operatore e recupera la copia dal backup.",
+        "200 OK · versione corrente 1",
+        portal.version === 1
+          ? "Il servizio riscrive v1 nello storage. Il contenuto coincide con quello già presente perché era corrente la stessa versione."
+          : `Il servizio sostituisce v${portal.version} con i byte del backup v1. I prossimi download leggeranno v1.`,
+        ["Console operatore", "Ripristino", "Backup e storage"],
+        { version: 1 },
+      );
+  }
 }
-export type Exchange = ReturnType<typeof exchange>;
-export const home = () => exchange("home", "GET /", "200 OK · text/html\nPortale documenti");
-export const catalog = () =>
-  exchange("catalog", "GET /documenti", "200 OK · text/html\n42.pdf · Bilancio annuale");
-export function readFile(signed: boolean, allowed: boolean, version: number) {
-  const kind = !signed ? "visitor" : allowed ? "allowed" : "denied";
-  return exchange(
-    kind,
-    readRequest + (signed ? "\nCookie: session=demo" : ""),
-    readCases[kind].status +
-      (kind === "allowed"
-        ? "\nContent-Type: application/pdf\n42.pdf · versione " + version
-        : "\nNessun byte del PDF"),
-  );
-}
+
+export type PortalExchange = ReturnType<typeof perform>["trace"];
