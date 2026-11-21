@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, ArrowRightCircle, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { HudBadge, HudNotice, HudPanel, HudTabPanel, HudTabs } from "@/design-system/nightrunner";
+import { TrustBoundaryExplorer } from "./TrustBoundaryExplorer";
 import { DataFlowExplorer } from "@/components/data-flow/DataFlowExplorer";
 import type { ArchitectureLevel } from "@/components/data-flow/types";
 import {
@@ -21,10 +22,7 @@ import {
   stateDefinitions,
   stateHighlights,
   stateMessage,
-  trustAnswer,
   trustBoundaryDefinition,
-  trustHighlight,
-  trustQuestion,
   type DataState,
   type Moment,
 } from "@/content/lessons/cybersecurity-1-3";
@@ -46,10 +44,6 @@ export function Cybersecurity13Slide() {
   const [dataState, setDataState] = useState<DataState>("transit");
   const currentLevel = levels.find((item) => item.value === architectureLevel)!;
   const currentState = stateDefinitions[dataState];
-  const trustConnections = architecture.connections.filter((connection) =>
-    ["browser-proxy", "proxy-backend", "backend-database", "backend-cache"].includes(connection.id),
-  );
-
   return (
     <article className="journey-lesson" aria-labelledby="lesson-1-3-title">
       <div id="lesson-1-3-title">
@@ -196,25 +190,7 @@ export function Cybersecurity13Slide() {
       <HudTabPanel tabsId="cybersecurity-1-3-moments" value="confini" activeValue={moment}>
         <HudPanel heading="Trust boundary: dove cambia la fiducia" className="lesson-panel-stack">
           <p className="lesson-scenario">{trustBoundaryDefinition}</p>
-          <DataFlowExplorer
-            config={architecture}
-            level={3}
-            highlight={trustHighlight}
-            showTrustBoundaries
-          />
-          <div className="journey-trust-links" aria-label="Valutazione dei singoli collegamenti">
-            {trustConnections.map((connection) => (
-              <div className="journey-trust-link" key={connection.id}>
-                <strong>{connection.label}</strong>
-                <span>{connection.protection}</span>
-              </div>
-            ))}
-          </div>
-          <section className="journey-trust-question">
-            <span className="lesson-label">Un tratto alla volta</span>
-            <h3>«{trustQuestion}»</h3>
-            <p>{trustAnswer}</p>
-          </section>
+          <TrustBoundaryExplorer />
           <MomentActions moment="confini" onChange={setMoment} />
         </HudPanel>
       </HudTabPanel>

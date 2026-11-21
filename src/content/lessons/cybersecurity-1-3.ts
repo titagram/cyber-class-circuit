@@ -366,6 +366,72 @@ export const trustQuestion =
 export const trustAnswer =
   "No. Nello scenario HTTPS termina sul reverse proxy: TLS protegge il tratto browser → proxy, ma non implica TLS tra proxy e backend. Ogni collegamento verso backend, database, cache o servizi esterni richiede una verifica specifica. I collegamenti interni non sono necessariamente insicuri: dipendono da configurazione e architettura.";
 
+export const trustLegs = [
+  {
+    id: "browser-proxy",
+    boundary: "client-service",
+    question: "Fino a dove arriva la protezione HTTPS del browser?",
+    answer:
+      "Il browser verifica il certificato del servizio. TLS protegge richiesta e risposta su questo collegamento e termina al reverse proxy, che può leggere la richiesta per inoltrarla.",
+  },
+  {
+    id: "proxy-backend",
+    boundary: "gateway-application",
+    question: "Chi protegge la richiesta dopo il proxy?",
+    answer:
+      "Il proxy apre o riusa un collegamento verso il backend. Verifica come il backend riconosce il proxy e se anche questo tratto usa TLS. Il lucchetto del browser riguarda la connessione esterna.",
+  },
+  {
+    id: "backend-database",
+    boundary: "application-data",
+    question: "Quali record può leggere il backend?",
+    answer:
+      "Il database riceve una query con l’identità applicativa e restituisce i metadati del file. Verifica i privilegi di quell’identità, il filtro sul tenant e la protezione del collegamento.",
+  },
+  {
+    id: "backend-cache",
+    boundary: "application-data",
+    question: "Chi può leggere le chiavi di Redis?",
+    answer:
+      "Il backend può memorizzare metadati temporanei nella cache. Verifica come Redis autentica il servizio, quali chiavi gli permette di leggere e come viene protetto il traffico.",
+  },
+  {
+    id: "backend-storage",
+    boundary: "application-data",
+    question: "Chi può recuperare il PDF dallo storage?",
+    answer:
+      "Dopo aver autorizzato l’utente, il backend chiede allo storage i byte del file. Verifica la protezione del canale e quali oggetti può leggere l’identità tecnica del backend.",
+  },
+  {
+    id: "database-backup",
+    boundary: null,
+    question: "Chi può copiare e ripristinare i metadati?",
+    answer:
+      "Il processo di backup copia i record del database. Verifica quali record può leggere, chi può accedere alla copia e chi è autorizzato al ripristino.",
+  },
+  {
+    id: "storage-backup",
+    boundary: null,
+    question: "Quali permessi proteggono la copia del file?",
+    answer:
+      "Il backup può conservare il PDF anche dopo la cancellazione dell’originale. Verifica chi può leggere e ripristinare la copia e per quanto tempo viene conservata.",
+  },
+  {
+    id: "backend-temp",
+    boundary: null,
+    question: "Chi può aprire un file temporaneo?",
+    answer:
+      "Se un’elaborazione scrive il file su disco, entra in gioco il controllo degli accessi alla directory. Verifica quali processi possono leggere quei byte e quando vengono rimossi.",
+  },
+  {
+    id: "backend-logs",
+    boundary: null,
+    question: "Quali dati finiscono nei log e chi può vederli?",
+    answer:
+      "Il backend registra eventi e identificatori tecnici. Verifica i campi inviati, i permessi dei lettori e la conservazione dei log: anche un ID può rivelare quale file è stato aperto.",
+  },
+];
+
 export const trustHighlight: DataFlowHighlight = {
   nodes: ["browser", "proxy", "backend"],
   connections: ["browser-proxy", "proxy-backend", "backend-database", "backend-cache"],

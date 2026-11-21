@@ -104,6 +104,50 @@ describe("Slide 1.3", () => {
     expect(within(panel).getByText(/Essere presenti in memoria non significa essere necessariamente salvati/)).toBeVisible();
   });
 
+  it("sincronizza la scheda del tratto con tutti i nodi, i rami e la panoramica", () => {
+    openMoment("7 · I confini di fiducia");
+    const panel = within(screen.getByRole("tabpanel", { name: "7 · I confini di fiducia" }));
+    const card = within(panel.getByRole("region", { name: "Un tratto alla volta" }));
+    for (const [node, leg] of [
+      ["Browser", "browser-proxy"],
+      ["Reverse proxy", "proxy-backend"],
+      ["Backend", "backend-database"],
+      ["Database", "backend-database"],
+      ["Cache Redis", "backend-cache"],
+      ["Object storage", "backend-storage"],
+      ["Sistemi di logging", "backend-logs"],
+      ["File temporanei", "backend-temp"],
+      ["Backup", "database-backup"],
+    ] as const) {
+      const icon = panel.getByRole("button", { name: "Ispeziona " + node });
+      fireEvent.click(icon);
+      expect(icon).toHaveAttribute("aria-pressed", "true");
+      expect(card.getByRole("heading", { name: node })).toBeVisible();
+      expect(panel.getByTestId("data-flow-connection-" + leg)).toHaveAttribute(
+        "data-highlighted",
+        "true",
+      );
+    }
+    fireEvent.click(card.getByRole("button", { name: "Object storage ↔ Backup" }));
+    expect(
+      card.getByRole("heading", { name: "Quali permessi proteggono la copia del file?" }),
+    ).toBeVisible();
+    expect(panel.getByTestId("data-flow-connection-database-backup")).toHaveAttribute(
+      "data-highlighted",
+      "false",
+    );
+    expect(panel.getByTestId("data-flow-connection-storage-backup")).toHaveAttribute(
+      "data-highlighted",
+      "true",
+    );
+    fireEvent.click(card.getByRole("button", { name: "Torna alla panoramica" }));
+    expect(panel.getByRole("button", { name: "Ispeziona Backup" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(card.getByText(/Se proteggo la comunicazione/)).toBeVisible();
+  });
+
   it("distingue le copie presenti da quelle possibili e valuta TLS per ogni tratto", () => {
     openMoment("6 · Le copie");
     const copies = screen.getByRole("tabpanel", { name: "6 · Le copie" });

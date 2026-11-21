@@ -422,3 +422,9 @@
     flex-wrap: wrap;
   }
 }
+
+.journey-trust-question .journey-level-controls,
+.journey-trust-question details { margin-block: .65rem; }
+.journey-trust-question h4 { margin: .45rem 0 .2rem; }
+.journey-trust-question summary, .journey-trust-reset { cursor: pointer; }
+.journey-trust-reset { color: var(--nr-cyan); text-decoration: underline; }
