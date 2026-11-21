@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { HudPanel, HudTabPanel, HudTabs } from "@/design-system/nightrunner";
+import { CopiesExplorer } from "./CopiesExplorer";
 import { ArchitectureLevelExplorer } from "./ArchitectureLevelExplorer";
 import { StoredOrProcessedExplorer } from "./StoredOrProcessedExplorer";
 import { TransitExplorer } from "./TransitExplorer";
@@ -14,10 +15,6 @@ import {
   architecture,
   conclusion,
   conclusionHighlight,
-  copiesHighlight,
-  copyLocations,
-  deletionAnswer,
-  deletionQuestion,
   lesson,
   levels,
   moments,
@@ -136,28 +133,7 @@ export function Cybersecurity13Slide() {
 
       <HudTabPanel tabsId="cybersecurity-1-3-moments" value="copie" activeValue={moment}>
         <HudPanel heading="Quante copie esistono?" className="lesson-panel-stack">
-          <p className="lesson-scenario">
-            Partiamo dal documento 42. Le copie realmente presenti nello scenario sono distinte dalle informazioni derivate e dalle copie che altre configurazioni potrebbero produrre.
-          </p>
-          <DataFlowExplorer config={architecture} level={3} highlight={copiesHighlight} />
-          <div className="journey-copies-grid">
-            {copyLocations.map((copy) => (
-              <section className="journey-copy-card" key={copy.place}>
-                <div className="journey-copy-card-heading">
-                  <h3>{copy.place}</h3>
-                  <span className={`journey-copy-status journey-copy-status-${copy.status}`}>
-                    {copy.status === "presente" ? "Presente nello scenario" : copy.status === "derivata" ? "Informazione derivata" : "Copia possibile"}
-                  </span>
-                </div>
-                <p>{copy.detail}</p>
-              </section>
-            ))}
-          </div>
-          <section className="journey-copy-question">
-            <span className="lesson-label">La domanda da non saltare</span>
-            <h3>«{deletionQuestion}»</h3>
-            <p>{deletionAnswer}</p>
-          </section>
+          <CopiesExplorer />
           <MomentActions moment="copie" onChange={setMoment} />
         </HudPanel>
       </HudTabPanel>

@@ -222,15 +222,41 @@ describe("Slide 1.3", () => {
     expect(card.getByText(/Se proteggo la comunicazione/)).toBeVisible();
   });
 
-  it("distingue le copie presenti da quelle possibili e valuta TLS per ogni tratto", () => {
-    openMoment("6 · Le copie");
-    const copies = screen.getByRole("tabpanel", { name: "6 · Le copie" });
-    const cache = within(copies).getByRole("heading", { name: "Cache" }).closest("section")!;
-    const storage = within(copies).getByRole("heading", { name: "Object storage" }).closest("section")!;
-    expect(within(cache).getByText("Informazione derivata")).toBeVisible();
-    expect(within(storage).getByText("Presente nello scenario")).toBeVisible();
+  it("mostra che cosa rimane in ciascun componente dopo il download", () => {
+    const name = "6 · Le copie";
+    openMoment(name);
+    const panel = within(screen.getByRole("tabpanel", { name }));
+    const card = within(panel.getByRole("region", { name: "Dopo il download di 42.pdf" }));
+    const overview = () => card.getByRole("heading", { name: "Un originale e due copie" });
+    expect(overview()).toBeVisible();
 
-    fireEvent.click(screen.getByRole("tab", { name: "7 · I confini di fiducia" }));
+    const cases = [
+      ["Browser", "File completo", /cartella Download/],
+      ["Reverse proxy", "Niente", /buffer temporanei/],
+      ["Backend", "Niente", /autorizzare Giulia/],
+      ["Database", "Solo metadati", /files.42.pdf/],
+      ["Cache Redis", "Solo metadati", /scadenza/],
+      ["Object storage", "File completo", /originale di 42.pdf/],
+      ["Backup", "File completo", /metadati di ripristino/],
+      ["File temporanei", "Niente", /file intermedio/],
+      ["Sistemi di logging", "Solo metadati", /esito del download/],
+    ] as const;
+    for (const [node, outcome, reason] of cases) {
+      fireEvent.click(panel.getByRole("button", { name: "Ispeziona " + node }));
+      expect(card.getByRole("heading", { name: node })).toBeVisible();
+      expect(card.getByText(outcome)).toBeVisible();
+      expect(card.getByText(reason)).toBeVisible();
+      expect(card.getByRole("button", { name: node })).toHaveAttribute("aria-pressed", "true");
+    }
+    fireEvent.click(card.getByRole("button", { name: "Database" }));
+    expect(panel.getByRole("button", { name: "Ispeziona Database" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(card.getByRole("button", { name: "Torna alla panoramica" }));
+    expect(overview()).toBeVisible();
+    expect(panel.getByTestId("data-flow-node-database")).toHaveAttribute("data-highlighted", "false");
+  });
+
+  it("mostra la protezione TLS distinta per ciascun tratto", () => {
+    openMoment("7 · I confini di fiducia");
     const trust = screen.getByRole("tabpanel", { name: "7 · I confini di fiducia" });
     expect(within(trust).getByText("TLS attivo; termina sul reverse proxy")).toBeVisible();
     expect(within(trust).getAllByText("Da valutare: dipende dalla configurazione interna")).toHaveLength(1);

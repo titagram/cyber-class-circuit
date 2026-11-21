@@ -198,12 +198,6 @@
   line-height: 1.6;
 }
 
-.journey-copies-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
 .journey-copy-card {
   border: 1px solid var(--nr-border);
   padding: 0.9rem;
@@ -240,11 +234,11 @@
   text-transform: uppercase;
 }
 
-.journey-copy-status-presente {
+.journey-copy-status-file {
   color: var(--nr-cyan);
 }
 
-.journey-copy-status-derivata {
+.journey-copy-status-metadata {
   color: var(--nr-coral);
 }
 
@@ -315,7 +309,6 @@
 
 @media (max-width: 700px) {
   .journey-state-explanation,
-  .journey-copies-grid,
   .journey-metadata-notice {
     grid-template-columns: 1fr;
   }

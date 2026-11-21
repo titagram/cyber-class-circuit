@@ -1,5 +1,6 @@
 import type {
   ArchitectureLevel,
+  ArchitectureNodeKind,
   DataFlowConfig,
   DataFlowHighlight,
 } from "@/components/data-flow/types";
@@ -323,26 +324,56 @@ export const stateHighlights: Record<DataState, DataFlowHighlight> = {
   },
 };
 
-export const copyLocations = [
-  { place: "Object storage", status: "presente", detail: "Contiene il file originale 42.pdf nello scenario." },
-  { place: "Backup", status: "presente", detail: "Contiene una copia di ripristino del file e dei metadati." },
-  { place: "Database", status: "derivata", detail: "Contiene metadati e riferimento al file: non è una copia del PDF." },
-  { place: "Cache", status: "derivata", detail: "Se la scheda è in cache, Redis conserva temporaneamente i metadati del file 42." },
-  { place: "File temporanei", status: "possibile", detail: "Potrebbero essere creati da specifiche elaborazioni, ma non sono necessari in ogni richiesta." },
-  { place: "Dispositivo dell'utente", status: "presente", detail: "Giulia ha completato il download. Nella cartella Download resta una copia di 42.pdf." },
-  { place: "Log", status: "derivata", detail: "Se il servizio registra il download, la voce contiene l’ID 42 e l’esito della richiesta." },
-] as const;
+export const copyLabels = {
+  file: "File completo",
+  metadata: "Solo metadati",
+  none: "Niente",
+} as const;
 
-export const copiesHighlight: DataFlowHighlight = {
-  nodes: ["storage", "backup", "database", "browser"],
-  secondaryNodes: ["cache", "temp", "logs"],
+type CopyOutcome = { category: keyof typeof copyLabels; remains: string; why: string };
+
+export const copyOutcomes: Record<ArchitectureNodeKind, CopyOutcome> = {
+  client: {
+    category: "file", remains: "Una copia di 42.pdf nella cartella Download di Giulia.",
+    why: "Giulia ha scelto «Scarica PDF». Il browser ha scritto sul disco tutti i blocchi ricevuti, quindi il file resta anche quando chiude la pagina.",
+  },
+  gateway: {
+    category: "none", remains: "Al reverse proxy non resta nulla del file o della richiesta in questo esempio.",
+    why: "Il proxy ha inoltrato i blocchi al browser usando buffer temporanei. Qui non conserva una risposta in cache né un registro locale della richiesta.",
+  },
+  compute: {
+    category: "none", remains: "Il processo backend non conserva una copia del PDF o della sua scheda dopo la risposta.",
+    why: "Ha usato i permessi per autorizzare Giulia e ha inoltrato i blocchi letti dallo storage. L’evento del download viene conservato dal servizio di logging.",
+  },
+  database: {
+    category: "metadata", remains: "La riga 42 contiene il proprietario, i permessi e il riferimento files/42.pdf.",
+    why: "Il backend consulta questa scheda per autorizzare la lettura e trovare l’originale. Il riferimento indica dove chiedere i byte del PDF.",
+  },
+  cache: {
+    category: "metadata", remains: "In Redis resta temporaneamente la scheda del file 42.",
+    why: "In questo esempio la voce è ancora valida e accelera una nuova ricerca. Alla scadenza sparisce dalla cache. I byte del PDF si leggono dallo storage.",
+  },
+  storage: {
+    category: "file", remains: "L’originale di 42.pdf è ancora nell’object storage.",
+    why: "Lo storage ha letto e inviato i byte al backend. La lettura lascia al suo posto l’oggetto che era già in archivio prima del download.",
+  },
+  backup: {
+    category: "file", remains: "Nel backup c’è una copia completa di 42.pdf insieme ai metadati di ripristino.",
+    why: "L’ultimo backup aveva già salvato questa versione. La copia serve a ripristinare il file ed esiste indipendentemente dal download di Giulia.",
+  },
+  temporary: {
+    category: "none", remains: "L’area temporanea non contiene un file di lavoro per questo download.",
+    why: "Il backend ha trasmesso il PDF a blocchi. Per questa operazione non ha avuto bisogno di creare un file intermedio sul disco.",
+  },
+  logging: {
+    category: "metadata", remains: "Nel registro resta un evento con l’ID 42 e l’esito del download.",
+    why: "Questi campi permettono di ricostruire l’operazione. Il backend ha inviato al registro i dettagli dell’evento e ha inviato il contenuto del PDF al browser.",
+  },
 };
 
-export const deletionQuestion =
-  "Eliminare un record dal database significa necessariamente aver eliminato ogni copia dell'informazione?";
-
+export const deletionQuestion = "Che cosa succede se elimino la riga 42 dal database?";
 export const deletionAnswer =
-  "No. Nel nostro scenario quel record contiene soprattutto metadati: il file può restare nell'object storage, nei backup, in eventuali copie temporanee o sul dispositivo se è stato scaricato. Una cancellazione completa richiede procedure coerenti con tutto il percorso e con i tempi di conservazione.";
+  "Scompare la scheda usata dall’applicazione per trovare il file. L’originale nello storage, la copia in Download e quella nel backup hanno un ciclo di vita proprio e restano dove sono.";
 
 export const trustBoundaryDefinition =
   "Un trust boundary, o confine di fiducia, separa componenti o ambienti con differenti livelli di fiducia, privilegi o responsabilità. Attraversarlo richiede una valutazione esplicita di identità, autorizzazioni e protezione dei dati.";
