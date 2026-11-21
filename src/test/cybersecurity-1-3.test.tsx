@@ -130,6 +130,30 @@ describe("Slide 1.3", () => {
     );
   });
 
+  it("sincronizza i tratti in transito con la mappa e il riquadro sotto", () => {
+    const name = "5 · Gli stati del dato";
+    openMoment(name);
+    const panel = within(screen.getByRole("tabpanel", { name }));
+    const detail = within(panel.getByRole("region", { name: "Dati in transito" }));
+    function selectLeg(label: string, edge: string, result: RegExp) {
+      fireEvent.click(detail.getByRole("button", { name: label }));
+      expect(detail.getByRole("heading", { name: label })).toBeVisible();
+      expect(detail.getByText(result)).toBeVisible();
+      expect(panel.getByTestId("data-flow-connection-" + edge)).toHaveAttribute("data-highlighted", "true");
+    }
+
+    selectLeg("Backend ↔ Database", "backend-database", /Il database restituisce i metadati/);
+    selectLeg("Backend ↔ Object storage", "backend-storage", /Lo storage invia al backend i byte/);
+    expect(panel.getByTestId("data-flow-connection-backend-database")).toHaveAttribute("data-highlighted", "false");
+
+    fireEvent.click(panel.getByRole("button", { name: "Ispeziona Backup" }));
+    expect(detail.getByRole("heading", { name: "Database ↔ Backup" })).toBeVisible();
+    selectLeg("Object storage ↔ Backup", "storage-backup", /L’archivio conserva una copia del PDF/);
+    fireEvent.click(detail.getByRole("button", { name: "Torna alla panoramica" }));
+    expect(detail.getByRole("heading", { name: "Dati in transito" })).toBeVisible();
+    expect(panel.getByRole("button", { name: "Ispeziona Backup" })).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("distingue transito, riposo e uso senza rendere persistente la memoria", () => {
     openMoment("5 · Gli stati del dato");
     const panel = screen.getByRole("tabpanel", { name: "5 · Gli stati del dato" });

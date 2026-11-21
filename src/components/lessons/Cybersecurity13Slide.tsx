@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { HudNotice, HudPanel, HudTabPanel, HudTabs } from "@/design-system/nightrunner";
 import { ArchitectureLevelExplorer } from "./ArchitectureLevelExplorer";
+import { TransitExplorer } from "./TransitExplorer";
 import { FileOpeningScene } from "./FileOpeningScene";
 import { TrustBoundaryExplorer } from "./TrustBoundaryExplorer";
 import { DataFlowExplorer } from "@/components/data-flow/DataFlowExplorer";
@@ -126,20 +127,24 @@ export function Cybersecurity13Slide() {
               </button>
             ))}
           </div>
-          <DataFlowExplorer config={architecture} level={3} highlight={stateHighlights[dataState]} />
-          <div className="journey-state-explanation" aria-live="polite">
-            <section>
-              <span className="lesson-label">{currentState.label}</span>
-              <h3>{currentState.title}</h3>
-              <p>{currentState.description}</p>
-            </section>
-            <ul className="journey-example-list">
-              {currentState.examples.map((example) => (
-                <li key={example}><ArrowRightCircle aria-hidden="true" /> {example}</li>
-              ))}
-            </ul>
-          </div>
-          <HudNotice>{stateMessage}</HudNotice>
+          {dataState === "transit" ? <TransitExplorer /> : (
+            <>
+              <DataFlowExplorer config={architecture} level={3} highlight={stateHighlights[dataState]} />
+              <div className="journey-state-explanation" aria-live="polite">
+                <section>
+                  <span className="lesson-label">{currentState.label}</span>
+                  <h3>{currentState.title}</h3>
+                  <p>{currentState.description}</p>
+                </section>
+                <ul className="journey-example-list">
+                  {currentState.examples.map((example) => (
+                    <li key={example}><ArrowRightCircle aria-hidden="true" /> {example}</li>
+                  ))}
+                </ul>
+              </div>
+              <HudNotice>{stateMessage}</HudNotice>
+            </>
+          )}
           <MomentActions moment="stati" onChange={setMoment} />
         </HudPanel>
       </HudTabPanel>
