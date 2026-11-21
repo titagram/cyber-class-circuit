@@ -12,6 +12,28 @@ function openMoment(name: string) {
 }
 
 describe("Slide 1.3", () => {
+  it("apre il PDF dopo il controllo del permesso e conserva l’originale nell’archivio", () => {
+    vi.useFakeTimers();
+    render(<Cybersecurity13Slide />);
+    const browser = within(screen.getByRole("region", { name: "Browser di Giulia" }));
+    const original = within(
+      screen.getByRole("region", { name: "Archivio del gestionale" }),
+    ).getByText("File originale");
+    expect(browser.getByText("42.pdf")).toBeVisible();
+    expect(browser.queryByText("Prima pagina di 42.pdf")).not.toBeInTheDocument();
+    fireEvent.click(browser.getByRole("button", { name: "Apri file" }));
+    expect(screen.getByRole("status")).toHaveTextContent("controlla se Giulia ha il permesso");
+    act(() => vi.advanceTimersByTime(1600));
+    expect(screen.getByRole("status")).toHaveTextContent("invia i suoi byte al browser");
+    expect(original).toBeVisible();
+    act(() => vi.advanceTimersByTime(2400));
+    expect(browser.getByText("Prima pagina di 42.pdf")).toBeVisible();
+    expect(original).toBeVisible();
+    fireEvent.click(browser.getByRole("button", { name: "Torna all’elenco" }));
+    expect(browser.queryByText("Prima pagina di 42.pdf")).not.toBeInTheDocument();
+    expect(original).toBeVisible();
+  });
+
   it("mostra solo Browser, Backend e Database nell'architettura essenziale", () => {
     openMoment("2 · L'essenziale");
     const panel = screen.getByRole("tabpanel", { name: "2 · L'essenziale" });

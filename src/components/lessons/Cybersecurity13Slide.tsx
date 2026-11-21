@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, ArrowRightCircle, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowRightCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
-import { HudBadge, HudNotice, HudPanel, HudTabPanel, HudTabs } from "@/design-system/nightrunner";
+import { HudNotice, HudPanel, HudTabPanel, HudTabs } from "@/design-system/nightrunner";
+import { FileOpeningScene } from "./FileOpeningScene";
 import { TrustBoundaryExplorer } from "./TrustBoundaryExplorer";
 import { DataFlowExplorer } from "@/components/data-flow/DataFlowExplorer";
 import type { ArchitectureLevel } from "@/components/data-flow/types";
@@ -60,12 +61,8 @@ export function Cybersecurity13Slide() {
       />
 
       <HudTabPanel tabsId="cybersecurity-1-3-moments" value="domanda" activeValue={moment}>
-        <HudPanel heading="Partiamo dal contratto" className="lesson-panel-stack">
-          <blockquote>«{lesson.openingQuestion}»</blockquote>
-          <p>{lesson.openingText}</p>
-          <p className="lesson-scenario">{lesson.scenario}</p>
-          <p className="lesson-duration">Durata indicativa della spiegazione guidata: {lesson.duration}</p>
-          <ContractDocument />
+        <HudPanel heading="Il file è nell’elenco. Dov’è il suo contenuto?" className="lesson-panel-stack">
+          {moment === "domanda" && <FileOpeningScene />}
           <MomentActions moment="domanda" onChange={setMoment} />
         </HudPanel>
       </HudTabPanel>
@@ -220,26 +217,6 @@ export function Cybersecurity13Slide() {
         </div>
       </HudTabPanel>
     </article>
-  );
-}
-
-function ContractDocument() {
-  return (
-    <section className="journey-opening-document" aria-label="Contratto di fornitura — ID 42">
-      <div className="journey-document-heading">
-        <FileText aria-hidden="true" />
-        <div>
-          <h3>{contract.title}</h3>
-          <span>Documento simulato · Tutti i dati sono fittizi</span>
-        </div>
-        <HudBadge tone="warning">{contract.classification}</HudBadge>
-      </div>
-      <dl className="journey-document-fields">
-        <div><dt>Cliente</dt><dd>{contract.customer}</dd></div>
-        <div><dt>Fornitore</dt><dd>{contract.supplier}</dd></div>
-        <div><dt>Importo</dt><dd>{contract.amount}</dd></div>
-      </dl>
-    </section>
   );
 }
 

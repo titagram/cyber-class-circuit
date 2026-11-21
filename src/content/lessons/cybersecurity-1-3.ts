@@ -8,13 +8,6 @@ export const lesson = {
   id: "cybersecurity-1-3",
   title: "1.3 — Il viaggio di un'informazione",
   subtitle: "Dove si trovano, come vengono elaborati e quali percorsi attraversano i dati.",
-  duration: "12–15 minuti",
-  openingQuestion:
-    "Quando apriamo un documento riservato in un'applicazione web, dove si trova quel documento e quali componenti attraversa prima di arrivare sul nostro schermo?",
-  openingText:
-    "Non serve indovinare subito l'intera architettura. Partiamo dal contratto e costruiamo il suo percorso un livello alla volta.",
-  scenario:
-    "Il gestionale SaaS multi-tenant consente a utenti di aziende diverse di consultare soltanto i documenti per cui possiedono un'autorizzazione. Tutti i dati di questa simulazione sono fittizi.",
 } as const;
 
 export const moments = [
