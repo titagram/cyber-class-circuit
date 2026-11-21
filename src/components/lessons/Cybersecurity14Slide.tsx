@@ -127,8 +127,8 @@ export function Cybersecurity14Slide() {
           <code>HTTPS · 443</code>
           <ul>
             <li>POST /login</li>
-            <li>GET /api/files/42</li>
-            {upload && <li className="web-reveal">POST /api/files · caricamento</li>}
+            <li>GET /api/documents/42</li>
+            {upload && <li className="web-reveal">POST /api/documents · caricamento</li>}
           </ul>
         </figure>
         {upload && (

@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, ArrowRightCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
-import { HudNotice, HudPanel, HudTabPanel, HudTabs } from "@/design-system/nightrunner";
+import { HudPanel, HudTabPanel, HudTabs } from "@/design-system/nightrunner";
 import { ArchitectureLevelExplorer } from "./ArchitectureLevelExplorer";
+import { StoredOrProcessedExplorer } from "./StoredOrProcessedExplorer";
 import { TransitExplorer } from "./TransitExplorer";
 import { FileOpeningScene } from "./FileOpeningScene";
 import { TrustBoundaryExplorer } from "./TrustBoundaryExplorer";
@@ -22,8 +23,6 @@ import {
   moments,
   nextQuestion,
   stateDefinitions,
-  stateHighlights,
-  stateMessage,
   trustBoundaryDefinition,
   type DataState,
   type Moment,
@@ -45,7 +44,6 @@ export function Cybersecurity13Slide() {
   const [architectureLevel, setArchitectureLevel] = useState<ArchitectureLevel>(2);
   const [dataState, setDataState] = useState<DataState>("transit");
   const currentLevel = levels.find((item) => item.value === architectureLevel)!;
-  const currentState = stateDefinitions[dataState];
   return (
     <article className="journey-lesson" aria-labelledby="lesson-1-3-title">
       <div id="lesson-1-3-title">
@@ -104,7 +102,7 @@ export function Cybersecurity13Slide() {
       <HudTabPanel tabsId="cybersecurity-1-3-moments" value="richiesta" activeValue={moment}>
         <HudPanel heading="Segui una richiesta" className="lesson-panel-stack">
           <p className="lesson-scenario">
-            L'utente apre il contratto 42. Avvia la sequenza, mettila in pausa oppure scegli direttamente un evento: richiesta e risposta sono simulate localmente.
+            Giulia scarica 42.pdf. Avvia la sequenza, mettila in pausa oppure scegli direttamente un evento: richiesta e risposta sono simulate localmente.
           </p>
           {moment === "richiesta" && (
             <DataFlowExplorer config={architecture} level={2} mode="simulate" />
@@ -127,23 +125,10 @@ export function Cybersecurity13Slide() {
               </button>
             ))}
           </div>
-          {dataState === "transit" ? <TransitExplorer /> : (
-            <>
-              <DataFlowExplorer config={architecture} level={3} highlight={stateHighlights[dataState]} />
-              <div className="journey-state-explanation" aria-live="polite">
-                <section>
-                  <span className="lesson-label">{currentState.label}</span>
-                  <h3>{currentState.title}</h3>
-                  <p>{currentState.description}</p>
-                </section>
-                <ul className="journey-example-list">
-                  {currentState.examples.map((example) => (
-                    <li key={example}><ArrowRightCircle aria-hidden="true" /> {example}</li>
-                  ))}
-                </ul>
-              </div>
-              <HudNotice>{stateMessage}</HudNotice>
-            </>
+          {dataState === "transit" ? (
+            <TransitExplorer />
+          ) : (
+            <StoredOrProcessedExplorer state={dataState} />
           )}
           <MomentActions moment="stati" onChange={setMoment} />
         </HudPanel>

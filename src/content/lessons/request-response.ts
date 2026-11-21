@@ -57,10 +57,10 @@ const start = hop(
   "Browser",
   "interazione umana",
   "Il clic separa nome e percorso",
-  "https://files.example/api/files/42",
-  "host = files.example\npercorso = /api/files/42",
+  "https://files.example/api/documents/42",
+  "host = files.example\npercorso = /api/documents/42",
   "Il browser deve trovare il server a cui collegarsi. Conserva il percorso per la successiva richiesta HTTP.",
-  "Apri /api/files/42",
+  "Apri /api/documents/42",
 );
 const lookup = hop(
   0,
@@ -124,10 +124,10 @@ const front = [
     "Reverse proxy",
     net,
     "Parte la richiesta HTTP",
-    "GET /api/files/42 HTTP/1.1\nHost: files.example\nCookie: session=demo",
+    "GET /api/documents/42 HTTP/1.1\nHost: files.example\nCookie: session=demo-session-id",
     "Metodo GET · file 42 · cookie di sessione",
     "Il metodo indica la lettura e il percorso identifica la risorsa. Il browser include il cookie valido per questo sito. Il reverse proxy riceve la richiesta come server HTTP del browser.",
-    "GET /api/files/42 + cookie",
+    "GET /api/documents/42 + cookie",
   ),
   hop(
     0,
@@ -135,10 +135,10 @@ const front = [
     "Server HTTP",
     net,
     "Il proxy sceglie l’applicazione",
-    "Host: files.example\nPercorso: /api/files/42",
+    "Host: files.example\nPercorso: /api/documents/42",
     "Richiesta inoltrata al backend file",
     "Il proxy sceglie il backend in base al sito e al percorso. Qui fa da client HTTP e invia la richiesta al server HTTP del backend su un collegamento distinto da quello del browser.",
-    "GET /api/files/42 + cookie",
+    "GET /api/documents/42 + cookie",
   ),
 ];
 const application = [
@@ -148,7 +148,7 @@ const application = [
     "Router",
     call,
     "Il server HTTP consegna la richiesta al router",
-    "GET /api/files/42 + cookie",
+    "GET /api/documents/42 + cookie",
     "Richiesta disponibile all’applicazione",
     "Il server HTTP del backend riceve la richiesta dal proxy. La passa al framework, che usa il router per scegliere la funzione da eseguire.",
     "Metodo, percorso e cookie",
@@ -159,8 +159,8 @@ const application = [
     "Sessione",
     call,
     "Il router abbina metodo e percorso",
-    "GET /api/files/42",
-    "Rotta GET /api/files/:id\nid = 42",
+    "GET /api/documents/42",
+    "Rotta GET /api/documents/:id\nid = 42",
     "Il router trova il gestore della lettura. In questa applicazione la rotta richiede una sessione, quindi passa prima al modulo che identifica la persona.",
     "Rotta di lettura · id 42 + sessione",
   ),
@@ -170,7 +170,7 @@ const application = [
     "Controller",
     call,
     "La sessione identifica Giulia",
-    "Cookie: session=demo",
+    "Cookie: session=demo-session-id",
     "utente = Giulia\nid = 42",
     "Il modulo verifica la validità della sessione e associa la richiesta a Giulia. Il permesso sul file resta da valutare.",
     "Giulia · id 42",
@@ -314,7 +314,7 @@ const denied = hop(
 );
 function response(allowed: boolean) {
   const headers = allowed
-    ? "HTTP/1.1 200 OK\nContent-Type: application/pdf"
+    ? "HTTP/1.1 200 OK\nContent-Type: application/pdf\nContent-Disposition: inline; filename=42.pdf"
     : "HTTP/1.1 403 Forbidden\nContent-Type: text/plain; charset=utf-8";
   return [
     hop(

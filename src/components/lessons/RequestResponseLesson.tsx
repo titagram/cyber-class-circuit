@@ -33,7 +33,7 @@ export function RequestResponseLesson() {
     <article className="web-lesson">
       <PageHeader
         title={requestLesson.title}
-        subtitle="Giulia apre il file 42. Segui la richiesta e osserva quando l’applicazione dispone di un’identità, di un permesso e infine dei byte."
+        subtitle="Questa volta Giulia apre 42.pdf nel browser. Segui la richiesta e osserva quando l’applicazione dispone di un’identità, di un permesso e infine dei byte."
       />
       <HudPanel heading="Apri file">
         <div className="web-sim-options">

@@ -21,7 +21,7 @@ export function TransportDiagram({
   const endpoint = tlsLinks[activeLink].endpoint;
 
   return (
-    <figure className="transport-diagram" aria-label="Percorso della richiesta del contratto 42">
+    <figure className="transport-diagram" aria-label="Percorso della richiesta del file 42.pdf">
       <div className="transport-path">
         <TransportNode id="browser" label="Browser" icon={Monitor} />
         <TransportLink

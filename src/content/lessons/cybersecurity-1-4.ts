@@ -24,7 +24,7 @@ export const surfaces = {
     boundary: "Internet → ingresso pubblico",
     observation: {
       visitor:
-        "Dal browser puoi aprire una connessione al proxy. Essere arrivato sulla porta 443 ti permette di inviare una richiesta HTTP.",
+        "Dal browser puoi aprire una connessione al proxy. Una volta stabilita la connessione TLS sulla porta 443, puoi inviare la richiesta HTTP.",
       user: "Giulia usa la stessa porta del visitatore. Il proxy accetta la connessione prima che l’applicazione esamini la sessione.",
       service:
         "Il backend riceve le richieste già inoltrate dal proxy. Per recuperare un file usa la rete interna.",
@@ -47,7 +47,7 @@ export const surfaces = {
   read: {
     label: "Apri file",
     layer: 1,
-    input: "GET /api/files/42 · ID del file",
+    input: "GET /api/documents/42 · ID del file",
     receiver: "Endpoint di lettura",
     boundary: "Richiesta dell’utente → permesso sul file",
     observation: {
@@ -61,7 +61,7 @@ export const surfaces = {
   upload: {
     label: "Carica file",
     layer: 1,
-    input: "POST /api/files · nome e byte del file",
+    input: "POST /api/documents · nome e byte del file",
     receiver: "Endpoint di caricamento",
     boundary: "Contenuto inviato dal browser → archivio gestito",
     observation: {

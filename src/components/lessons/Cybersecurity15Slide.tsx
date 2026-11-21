@@ -28,7 +28,7 @@ export function Cybersecurity15Slide() {
   return (
     <article className="max-w-[1180px]">
       <PageHeader title={tlsLesson.title} subtitle={tlsLesson.subtitle} />
-      <HudPanel heading="Dove si può leggere il contratto 42?" className="min-w-0 space-y-4">
+      <HudPanel heading="Dove si può leggere il file 42.pdf?" className="min-w-0 space-y-4">
         <p className="text-muted-foreground">
           Scegli un tratto e cambia protocollo. Segui il simbolo dell’occhio per vedere da dove stai
           osservando la richiesta simulata.
@@ -142,7 +142,7 @@ export function Cybersecurity15Slide() {
         <HudNotice>
           HTTPS protegge riservatezza e integrità del traffico e consente al client di verificare
           l'identità del server tramite il certificato. Ogni collegamento ha una protezione propria.
-          Il backend deve comunque verificare il diritto dell'utente di aprire il contratto.
+          Il backend deve comunque verificare il diritto dell'utente di leggere il file.
         </HudNotice>
       </HudPanel>
     </article>

@@ -19,7 +19,7 @@ describe("Slide 1.4", () => {
     assert(Lesson);
     render(<Lesson />);
     fireEvent.click(screen.getByRole("button", { name: "Attiva caricamento" }));
-    expect(screen.getByText(/POST .api.files · nome/)).toBeVisible();
+    expect(screen.getByText(/POST .api.documents · nome/)).toBeVisible();
     expect(screen.getByText("HTTPS · 443")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Nelle funzioni web" }));
     expect(screen.getByRole("status")).toHaveTextContent("Esatto");
@@ -36,7 +36,7 @@ describe("Slide 1.5", () => {
 
     const observation = screen.getByRole("region", { name: "Osservazione del traffico" });
     const diagram = within(
-      screen.getByRole("figure", { name: "Percorso della richiesta del contratto 42" }),
+      screen.getByRole("figure", { name: "Percorso della richiesta del file 42.pdf" }),
     );
     const externalLink = diagram.getByTestId("data-flow-connection-browser-proxy");
     const internalLink = diagram.getByTestId("data-flow-connection-proxy-backend");

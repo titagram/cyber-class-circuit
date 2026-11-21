@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { RequestArchitecture } from "@/components/lessons/RequestArchitecture";
 import { RequestResponseLesson } from "@/components/lessons/RequestResponseLesson";
 import { buildRequestTrace, requestLesson } from "@/content/lessons/request-response";
+import { documentRequest, documentResponse } from "@/content/lessons/cybersecurity-1-3";
+import { surfaces } from "@/content/lessons/cybersecurity-1-4";
 import { getCourseChapters, getRequestParentId } from "@/lib/chapters";
 
 describe("Request e response", () => {
@@ -30,6 +32,14 @@ describe("Request e response", () => {
     const stored = { ...other, id: "stored", position: 8, content: { lesson: requestLesson.key } };
     expect(getCourseChapters("web", [stored, other, parent])).toEqual([parent, stored, other]);
   });
+  it("segue la stessa risorsa nel download e nella visualizzazione", () => {
+    const trace = buildRequestTrace(false, true);
+    expect(trace.some((step) => step.input === documentRequest)).toBe(true);
+    expect(surfaces.read.input).toContain("GET /api/documents/42");
+    expect(documentResponse).toContain("attachment; filename=42.pdf");
+    expect(trace.some((step) => step.output.includes("inline; filename=42.pdf"))).toBe(true);
+  });
+
   it("varia solo i tratti dipendenti da cache e permesso", () => {
     const normal = buildRequestTrace(false, true);
     const denied = buildRequestTrace(false, false);

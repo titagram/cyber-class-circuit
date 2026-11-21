@@ -50,7 +50,7 @@ describe("Slide 1.3", () => {
 
     const current = () =>
       within(within(panel).getByRole("region", { name: "Dettagli dell’architettura" }));
-    expect(current().getByText("tenant-alfa/contracts/42.pdf")).toBeVisible();
+    expect(current().getByText("files/42.pdf")).toBeVisible();
     fireEvent.click(within(panel).getByRole("button", { name: "Livello 3" }));
     expect(current().getByRole("heading", { name: "Backup e file temporanei" })).toBeVisible();
     for (const label of [
@@ -82,7 +82,7 @@ describe("Slide 1.3", () => {
     const panel = screen.getByRole("tabpanel", { name: "4 · La richiesta" });
 
     fireEvent.click(within(panel).getByRole("button", { name: /4 Database · restituisce i metadati/ }));
-    expect(within(panel).getByText("file: tenant-alfa/contracts/42.pdf", { exact: false })).toBeVisible();
+    expect(within(panel).getByText("file: files/42.pdf", { exact: false })).toBeVisible();
     expect(within(panel).getByTestId("data-flow-connection-backend-database")).toHaveAttribute("data-highlighted", "true");
 
     fireEvent.click(within(panel).getByRole("button", { name: /Passaggio successivo/ }));
@@ -154,18 +154,28 @@ describe("Slide 1.3", () => {
     expect(panel.getByRole("button", { name: "Ispeziona Backup" })).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("distingue transito, riposo e uso senza rendere persistente la memoria", () => {
-    openMoment("5 · Gli stati del dato");
-    const panel = screen.getByRole("tabpanel", { name: "5 · Gli stati del dato" });
-
-    fireEvent.click(within(panel).getByRole("button", { name: "Data at rest" }));
-    expect(within(panel).getByTestId("data-flow-node-storage")).toHaveAttribute("data-highlighted", "true");
-    expect(within(panel).getByTestId("data-flow-node-browser")).toHaveAttribute("data-highlighted", "false");
-
-    fireEvent.click(within(panel).getByRole("button", { name: "Data in use" }));
-    expect(within(panel).getByTestId("data-flow-node-backend")).toHaveAttribute("data-highlighted", "true");
-    expect(within(panel).getByTestId("data-flow-node-browser")).toHaveAttribute("data-highlighted", "true");
-    expect(within(panel).getByText(/Essere presenti in memoria non significa essere necessariamente salvati/)).toBeVisible();
+  it("confronta dati a riposo e in uso sullo stesso componente", () => {
+    const name = "5 · Gli stati del dato";
+    openMoment(name);
+    const panel = within(screen.getByRole("tabpanel", { name }));
+    const click = (label: string) => fireEvent.click(panel.getByRole("button", { name: label }));
+    click("Data at rest");
+    expect(panel.getByTestId("data-flow-node-browser")).toHaveAttribute("data-highlighted", "true");
+    click("Ispeziona Browser");
+    const rest = within(panel.getByRole("region", { name: "Dati a riposo" }));
+    expect(rest.getByText(/sul disco del computer di Giulia/)).toBeVisible();
+    click("Data in use");
+    const use = within(panel.getByRole("region", { name: "Dati in uso" }));
+    expect(use.getByRole("heading", { name: "Browser" })).toBeVisible();
+    expect(use.getByText(/in memoria i blocchi di 42.pdf/)).toBeVisible();
+    click("Ispeziona Backup");
+    expect(use.getByText(/il backup resta inattivo/)).toBeVisible();
+    click("Torna alla panoramica");
+    expect(use.getByRole("group", { name: "Esplora un esempio" })).toBeVisible();
+    click("Database");
+    expect(use.getByText(/elabora l’ID 42 della query/)).toBeVisible();
+    click("Ispeziona Database");
+    expect(panel.getByRole("button", { name: "Ispeziona Database" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("sincronizza la scheda del tratto con tutti i nodi, i rami e la panoramica", () => {
@@ -217,7 +227,7 @@ describe("Slide 1.3", () => {
     const copies = screen.getByRole("tabpanel", { name: "6 · Le copie" });
     const cache = within(copies).getByRole("heading", { name: "Cache" }).closest("section")!;
     const storage = within(copies).getByRole("heading", { name: "Object storage" }).closest("section")!;
-    expect(within(cache).getByText("Copia possibile")).toBeVisible();
+    expect(within(cache).getByText("Informazione derivata")).toBeVisible();
     expect(within(storage).getByText("Presente nello scenario")).toBeVisible();
 
     fireEvent.click(screen.getByRole("tab", { name: "7 · I confini di fiducia" }));

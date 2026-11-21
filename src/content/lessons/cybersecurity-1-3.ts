@@ -29,7 +29,7 @@ export const contract = {
   supplier: "Azienda Beta S.p.A.",
   amount: "€ 125.000",
   classification: "Riservato",
-  fileReference: "tenant-alfa/contracts/42.pdf",
+  fileReference: "files/42.pdf",
 } as const;
 
 export const levels: readonly {
@@ -59,10 +59,10 @@ export const levels: readonly {
 ];
 
 export const documentRequest =
-  "GET /api/documents/42 HTTP/1.1\nHost: gestionale.example\nCookie: session=demo-session-id";
+  "GET /api/documents/42 HTTP/1.1\nHost: files.example\nCookie: session=demo-session-id";
 
 export const documentResponse =
-  "HTTP/1.1 200 OK\nCache-Control: no-store\nContent-Type: application/pdf\nContent-Disposition: inline; filename=contratto-42.pdf\n\n[contenuto simulato del documento]";
+  "HTTP/1.1 200 OK\nCache-Control: no-store\nContent-Type: application/pdf\nContent-Disposition: attachment; filename=42.pdf\n\n[byte simulati di 42.pdf]";
 
 export const architecture: DataFlowConfig = {
   id: "saas-document-architecture-1-3",
@@ -221,7 +221,7 @@ export const architecture: DataFlowConfig = {
     {
       id: "browser-request",
       title: "Browser · genera la richiesta",
-      description: "L'utente seleziona «Visualizza documento». Il browser prepara la richiesta HTTP per il contratto 42.",
+      description: "Giulia seleziona «Scarica PDF». Il browser chiede il file con ID 42.",
       nodes: ["browser"],
       transfers: [],
       payloadLabel: "Richiesta HTTP simulata",
@@ -240,13 +240,13 @@ export const architecture: DataFlowConfig = {
       payload: "GET /api/documents/42\nCookie: session=demo-session-id\n→ destinazione: backend",
     },
     {
-      id: "backend-authorize",
-      title: "Backend · identifica e autorizza",
-      description: "Il backend associa la sessione a un utente e verifica che l’utente sia autorizzato ad accedere al documento 42 nel suo tenant prima di recuperare il file.",
+      id: "backend-identify",
+      title: "Backend · identifica Giulia",
+      description: "Il backend riconosce Giulia dalla sessione. Per decidere se può leggere il file deve ora consultarne la scheda.",
       nodes: ["backend"],
       transfers: [],
       payloadLabel: "Verifica applicativa simulata",
-      payload: "session=demo-session-id → utente demo\ntenant: Azienda Alfa S.r.l.\ndocumento 42: accesso autorizzato",
+      payload: "session=demo-session-id → Giulia\ntenant: Azienda Alfa S.r.l.\nfile 42: permesso da verificare",
     },
     {
       id: "database-metadata",
@@ -255,16 +255,16 @@ export const architecture: DataFlowConfig = {
       nodes: ["backend", "database"],
       transfers: [{ connection: "backend-database", direction: "reverse" }],
       payloadLabel: "Metadati del documento",
-      payload: "id: 42\ntenant: Azienda Alfa S.r.l.\ntitolo: Contratto di fornitura\nclassificazione: Riservato\nfile: tenant-alfa/contracts/42.pdf",
+      payload: "id: 42\ntenant: Azienda Alfa S.r.l.\nnome: 42.pdf\nclassificazione: Riservato\npermesso di lettura: Giulia\nfile: files/42.pdf",
     },
     {
       id: "storage-content",
       title: "Object storage · restituisce il file",
-      description: "Con il riferimento ottenuto dal database, il backend recupera il contenuto del documento dall'object storage.",
+      description: "Il backend verifica sulla scheda che Giulia possa leggere il file. Ottenuto il permesso, usa il riferimento per chiedere i byte allo storage.",
       nodes: ["backend", "storage"],
       transfers: [{ connection: "backend-storage", direction: "reverse" }],
       payloadLabel: "Contenuto recuperato",
-      payload: "tenant-alfa/contracts/42.pdf\n→ contenuto del contratto disponibile nella memoria del backend",
+      payload: "files/42.pdf\n→ blocchi di 42.pdf nella memoria del backend",
     },
     {
       id: "response-return",
@@ -279,13 +279,13 @@ export const architecture: DataFlowConfig = {
       payload: documentResponse,
     },
     {
-      id: "browser-render",
-      title: "Browser · visualizza il documento",
-      description: "Il browser riceve i dati e carica il contratto per la visualizzazione. Ora il contenuto è anche in uso sul dispositivo.",
+      id: "browser-save",
+      title: "Browser · salva il file",
+      description: "Il browser scrive in Download i blocchi ricevuti. A trasferimento concluso Giulia ha una copia locale e lo storage conserva l’originale.",
       nodes: ["browser"],
       transfers: [],
-      payloadLabel: "Documento visualizzato",
-      payload: "Contratto di fornitura — ID 42\nCliente: Azienda Alfa S.r.l.\nFornitore: Azienda Beta S.p.A.\nImporto: € 125.000\nClassificazione: Riservato",
+      payloadLabel: "Download completato",
+      payload: "Download/42.pdf · copia locale\nfiles/42.pdf · originale nello storage",
     },
   ],
 };
@@ -295,19 +295,16 @@ export const stateDefinitions = {
     label: "Data in transit",
     title: "Dati in transito",
     description: "Informazioni trasmesse tra componenti. I collegamenti evidenziati rappresentano i percorsi possibili del documento e dei suoi metadati.",
-    examples: ["Browser → Reverse proxy", "Reverse proxy → Backend", "Backend → Database", "Backend → Object storage"],
   },
   rest: {
     label: "Data at rest",
     title: "Dati a riposo",
-    description: "Informazioni conservate su supporti di memorizzazione. Nel nostro scenario il file è nello storage e nel backup; il database contiene i suoi metadati.",
-    examples: ["Record e metadati nel database", "Documento nell'object storage", "Copie di backup", "Eventuali file persistenti o temporanei su disco"],
+    description: "Dopo il download, Giulia può riaprire la copia sul disco. Seleziona un componente per scoprire dove restano il PDF, la sua scheda o una traccia della richiesta.",
   },
   use: {
     label: "Data in use",
     title: "Dati in uso",
-    description: "Informazioni durante l'elaborazione. Essere presenti in memoria non significa essere necessariamente salvati in modo persistente.",
-    examples: ["Documento nella memoria del backend durante la richiesta", "Dati elaborati dal runtime applicativo", "Contenuto caricato dal browser per la visualizzazione"],
+    description: "Un dato è in uso mentre un componente lo legge o lo elabora. Seleziona un componente per seguire cosa fa con i byte o i metadati del file 42.",
   },
 } as const;
 
@@ -318,30 +315,27 @@ export const stateHighlights: Record<DataState, DataFlowHighlight> = {
     connections: ["browser-proxy", "proxy-backend", "backend-database", "backend-storage"],
   },
   rest: {
-    nodes: ["database", "storage", "backup"],
+    nodes: ["browser", "database", "storage", "backup"],
     secondaryNodes: ["temp"],
   },
   use: {
-    nodes: ["backend", "browser"],
+    nodes: ["browser", "proxy", "backend", "database", "storage"],
   },
 };
-
-export const stateMessage =
-  "Un'informazione può attraversare diversi stati durante il proprio ciclo di vita. Le misure di protezione devono essere valutate in relazione al contesto e alle modalità con cui il dato viene trattato.";
 
 export const copyLocations = [
   { place: "Object storage", status: "presente", detail: "Contiene il file originale 42.pdf nello scenario." },
   { place: "Backup", status: "presente", detail: "Contiene una copia di ripristino del file e dei metadati." },
   { place: "Database", status: "derivata", detail: "Contiene metadati e riferimento al file: non è una copia del PDF." },
-  { place: "Cache", status: "possibile", detail: "Potrebbe contenerne il contenuto soltanto se configurata per conservarlo; qui non lo fa." },
+  { place: "Cache", status: "derivata", detail: "Se la scheda è in cache, Redis conserva temporaneamente i metadati del file 42." },
   { place: "File temporanei", status: "possibile", detail: "Potrebbero essere creati da specifiche elaborazioni, ma non sono necessari in ogni richiesta." },
-  { place: "Dispositivo dell'utente", status: "possibile", detail: "Una copia persistente nasce se il documento viene scaricato." },
-  { place: "Log", status: "possibile", detail: "Una registrazione impropria potrebbe includere dati sensibili; i log non contengono necessariamente l'intero file." },
+  { place: "Dispositivo dell'utente", status: "presente", detail: "Giulia ha completato il download. Nella cartella Download resta una copia di 42.pdf." },
+  { place: "Log", status: "derivata", detail: "Se il servizio registra il download, la voce contiene l’ID 42 e l’esito della richiesta." },
 ] as const;
 
 export const copiesHighlight: DataFlowHighlight = {
-  nodes: ["storage", "backup", "database"],
-  secondaryNodes: ["cache", "temp", "browser", "logs"],
+  nodes: ["storage", "backup", "database", "browser"],
+  secondaryNodes: ["cache", "temp", "logs"],
 };
 
 export const deletionQuestion =

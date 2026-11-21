@@ -1,7 +1,7 @@
 export const tlsLesson = {
   title: "1.5 — HTTP e HTTPS: che cosa vede la rete?",
   subtitle:
-    "Segui la richiesta del contratto 42 sui due collegamenti e confronta ciò che è leggibile.",
+    "Segui la richiesta del file 42.pdf sui due collegamenti e confronta ciò che è leggibile.",
 };
 
 export const tlsLinks = {
