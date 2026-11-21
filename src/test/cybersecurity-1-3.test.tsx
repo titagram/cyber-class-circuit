@@ -48,14 +48,33 @@ describe("Slide 1.3", () => {
     openMoment("3 · L'architettura");
     const panel = screen.getByRole("tabpanel", { name: "3 · L'architettura" });
 
+    const current = () =>
+      within(within(panel).getByRole("region", { name: "Dettagli dell’architettura" }));
+    expect(current().getByText("tenant-alfa/contracts/42.pdf")).toBeVisible();
     fireEvent.click(within(panel).getByRole("button", { name: "Livello 3" }));
-    expect(within(panel).getByTestId("data-flow-node-backup")).toBeVisible();
-    expect(within(panel).getByTestId("data-flow-node-temp")).toBeVisible();
-    expect(within(panel).getByText("tenant-alfa/contracts/42.pdf")).toBeVisible();
-
+    expect(current().getByRole("heading", { name: "Backup e file temporanei" })).toBeVisible();
+    for (const label of [
+      "Browser",
+      "Reverse proxy",
+      "Backend",
+      "Database",
+      "Cache Redis",
+      "Object storage",
+      "Backup",
+      "File temporanei",
+      "Sistemi di logging",
+    ]) {
+      fireEvent.click(within(panel).getByRole("button", { name: "Ispeziona " + label }));
+      expect(current().getByRole("heading", { name: label })).toBeVisible();
+    }
+    expect(current().getByText(/registrare l’ID 42 e l’esito/)).toBeVisible();
+    fireEvent.click(current().getByRole("button", { name: "Torna al riepilogo del livello" }));
+    expect(current().getByRole("heading", { name: "Backup e file temporanei" })).toBeVisible();
+    fireEvent.click(within(panel).getByRole("button", { name: "Ispeziona Backup" }));
     fireEvent.click(within(panel).getByRole("button", { name: "Livello 1" }));
     expect(within(panel).queryByTestId("data-flow-node-backup")).not.toBeInTheDocument();
-    expect(within(panel).queryByTestId("data-flow-node-storage")).not.toBeInTheDocument();
+    expect(current().getByRole("heading", { name: "Chi chiede il file?" })).toBeVisible();
+    expect(current().queryByRole("heading", { name: "Backup" })).not.toBeInTheDocument();
   });
 
   it("permette passaggi diretti, avanzamento e ripristino della richiesta", () => {

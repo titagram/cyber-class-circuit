@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, ArrowRightCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/PageHeader";
 import { HudNotice, HudPanel, HudTabPanel, HudTabs } from "@/design-system/nightrunner";
+import { ArchitectureLevelExplorer } from "./ArchitectureLevelExplorer";
 import { FileOpeningScene } from "./FileOpeningScene";
 import { TrustBoundaryExplorer } from "./TrustBoundaryExplorer";
 import { DataFlowExplorer } from "@/components/data-flow/DataFlowExplorer";
@@ -11,7 +12,6 @@ import {
   architecture,
   conclusion,
   conclusionHighlight,
-  contract,
   copiesHighlight,
   copyLocations,
   deletionAnswer,
@@ -95,19 +95,7 @@ export function Cybersecurity13Slide() {
             <h3>{currentLevel.title}</h3>
             <p>{currentLevel.description}</p>
           </div>
-          <DataFlowExplorer config={architecture} level={architectureLevel} />
-          {architectureLevel >= 2 && (
-            <div className="journey-metadata-notice">
-              <div>
-                <h3>Nel database: i metadati</h3>
-                <p>Titolo, ID 42, tenant, classificazione e riferimento <code>{contract.fileReference}</code>.</p>
-              </div>
-              <div>
-                <h3>Nell'object storage: il contenuto</h3>
-                <p>Il file 42.pdf con il contratto vero e proprio. Metadati e contenuto hanno ruoli e luoghi distinti.</p>
-              </div>
-            </div>
-          )}
+          <ArchitectureLevelExplorer key={architectureLevel} level={architectureLevel} />
           <MomentActions moment="espansione" onChange={setMoment} />
         </HudPanel>
       </HudTabPanel>
