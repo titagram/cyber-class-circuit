@@ -8,6 +8,7 @@ import { canAccessAuthenticatedPath } from "@/lib/access";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -182,6 +183,12 @@ function Layout() {
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
+                    <ThemeToggle collapsed />
+                  </TooltipTrigger>
+                  <TooltipContent side="right">Cambia tema</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
                     <Button size="icon" variant="ghost" onClick={signOut} aria-label="Esci">
                       <LogOut className="h-4 w-4" />
                     </Button>
@@ -193,6 +200,7 @@ function Layout() {
               <div className="mt-4 space-y-2 border-t border-sidebar-border pt-4 text-xs md:mt-0">
                 <div className="truncate">{email}</div>
                 <div className="font-mono uppercase text-sidebar-primary">{roleLabel}</div>
+                <ThemeToggle className="w-full" />
                 <Button size="sm" variant="ghost" className="w-full justify-start px-2" onClick={signOut}>
                   <LogOut className="h-4 w-4" /> Esci
                 </Button>

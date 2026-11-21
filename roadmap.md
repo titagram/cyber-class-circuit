@@ -20,3 +20,10 @@
 - [x] Registrare e pubblicare il capitolo 1.3 nel corso esistente.
 - [x] Aggiungere ed eseguire i test sui comportamenti della simulazione.
 - [x] Verificare il flusso completo su desktop e telefono.
+
+# Tema chiaro e scuro
+
+- [x] Aggiungere il toggle sole/luna nella barra laterale e nella pagina di accesso.
+- [x] Definire la palette chiara sui token Nightrunner condivisi.
+- [x] Salvare e ripristinare la preferenza tra i ricaricamenti.
+- [x] Verificare desktop, telefono, barra ridotta e slide interattiva.

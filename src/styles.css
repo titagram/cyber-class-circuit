@@ -114,25 +114,67 @@
   --sidebar-ring: var(--nr-cyan);
 }
 
-/* The existing day-mode control remains available; Nightrunner is the default. */
+/* Day mode keeps the Nightrunner accents with readable light-surface contrast. */
 html:not(.dark), .nr-theme.nr-light {
-  --background: oklch(0.97 0.006 230);
-  --foreground: oklch(0.22 0.02 250);
-  --card: oklch(1 0 0);
-  --card-foreground: var(--foreground);
-  --popover: var(--card);
-  --popover-foreground: var(--foreground);
-  --muted: oklch(0.93 0.008 230);
-  --muted-foreground: oklch(0.43 0.025 230);
-  --secondary: var(--muted);
-  --secondary-foreground: oklch(0.38 0.065 205);
-  --accent: oklch(0.38 0.065 205);
-  --accent-foreground: oklch(1 0 0);
-  --border: oklch(0.76 0.03 10);
-  --input: var(--border);
-  --ring: var(--accent);
+  --nr-background: #eef2f1;
+  --nr-panel: #fffdf7;
+  --nr-panel-end: #f4f5f2;
+  --nr-yellow: #745c00;
+  --nr-cyan: #00777c;
+  --nr-coral: #a32f43;
+  --nr-text: #17252b;
+  --nr-muted: #526a70;
+  --nr-border: #c6a6ad;
+  --nr-on-text: #ffffff;
+  --nr-off: #a53948;
+  --nr-off-text: #7c1f30;
+  --nr-off-border: #a53948;
+  --nr-inactive-off: #f3e4e6;
+  --nr-inactive-off-text: #98636d;
+  --nr-inactive-on: #e1eeee;
+  --nr-inactive-on-text: #52787b;
+  --nr-disabled: #e3e6e5;
+  --nr-disabled-text: #6f787b;
+  --nr-disabled-border: #a8b0b2;
+  --nr-menu-gradient: linear-gradient(180deg, #f9eae9 0%, #f6f1ed 20%, #eff5f3 60%, #eef2f1 100%);
+  --background: var(--nr-background);
+  --foreground: var(--nr-text);
+  --card: var(--nr-panel-end);
+  --card-foreground: var(--nr-text);
+  --popover: var(--nr-panel);
+  --popover-foreground: var(--nr-text);
+  --primary: var(--nr-yellow);
+  --primary-foreground: var(--nr-on-text);
+  --secondary: var(--nr-panel);
+  --secondary-foreground: var(--nr-cyan);
+  --muted: var(--nr-panel);
+  --muted-foreground: var(--nr-muted);
+  --accent: var(--nr-cyan);
+  --accent-foreground: var(--nr-on-text);
+  --destructive: var(--nr-coral);
+  --destructive-foreground: var(--nr-on-text);
+  --success: var(--nr-cyan);
+  --border: var(--nr-border);
+  --input: var(--nr-border);
+  --ring: var(--nr-cyan);
+  --grid: var(--nr-border);
+  --shift: color-mix(in srgb, var(--nr-cyan) 12%, transparent);
+  --chart-1: var(--nr-yellow);
+  --chart-2: var(--nr-cyan);
+  --chart-3: var(--nr-coral);
+  --chart-4: var(--nr-muted);
+  --chart-5: var(--nr-off-text);
+  --sidebar: var(--nr-background);
+  --sidebar-foreground: var(--nr-text);
+  --sidebar-primary: var(--nr-cyan);
+  --sidebar-primary-foreground: var(--nr-on-text);
+  --sidebar-accent: var(--nr-panel);
+  --sidebar-accent-foreground: var(--nr-cyan);
+  --sidebar-border: var(--nr-border);
+  --sidebar-ring: var(--nr-cyan);
 }
-.nr-theme.nr-light { color: var(--foreground); background: var(--background); color-scheme: light; }
+html:not(.dark) { color-scheme: light; }
+.nr-theme.nr-light { color: var(--foreground); background: var(--nr-menu-gradient); color-scheme: light; }
 
 @layer base {
   * {

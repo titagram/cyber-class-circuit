@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ColorThemeProvider, useColorTheme } from "@/hooks/useColorTheme";
 import { Toaster } from "@/components/ui/sonner";
 import { HudTheme } from "@/design-system/nightrunner";
 
@@ -95,16 +96,25 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function ThemedApp() {
+  const { theme } = useColorTheme();
+  return (
+    <HudTheme gradientIntensity={65} mode={theme} className="nr-app">
+      <AuthProvider>
+        <Outlet />
+        <Toaster richColors theme={theme} />
+      </AuthProvider>
+    </HudTheme>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <HudTheme gradientIntensity={65} className="nr-app">
-        <AuthProvider>
-          <Outlet />
-          <Toaster richColors />
-        </AuthProvider>
-      </HudTheme>
+      <ColorThemeProvider>
+        <ThemedApp />
+      </ColorThemeProvider>
     </QueryClientProvider>
   );
 }

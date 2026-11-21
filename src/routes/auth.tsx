@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { HudNotice, HudPanel, HudTextField } from "@/design-system/nightrunner";
 import { useAuth } from "@/hooks/useAuth";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 function safeNext(n: unknown) {
   return typeof n === "string" && n.startsWith("/") && !n.startsWith("//") ? n : "/classi";
@@ -58,7 +59,10 @@ function AuthPage() {
   }
 
   return (
-    <div className="grid min-h-screen md:grid-cols-2">
+    <div className="relative grid min-h-screen md:grid-cols-2">
+      <div className="absolute right-4 top-4 z-10">
+        <ThemeToggle />
+      </div>
       <div className="hidden flex-col justify-between border-r p-10 md:flex">
         <div className="nr-brand">CYBERSECURITY / 101</div>
         <div>

@@ -4,8 +4,8 @@ import { themeVariables } from '../core/index';
 import type { ButtonVariant, ThemeOptions, Tone } from '../core/index';
 
 export interface HudThemeProps extends HTMLAttributes<HTMLDivElement>, ThemeOptions {}
-export function HudTheme({ gradientIntensity = 65, highContrast = false, scanlines = false, className = '', style, ...props }: HudThemeProps) {
-  return <div {...props} className={`nr-theme ${className}`} style={{ ...themeVariables({ gradientIntensity, highContrast, scanlines }), ...style } as CSSProperties} />;
+export function HudTheme({ gradientIntensity = 65, highContrast = false, scanlines = false, mode = 'dark', className = '', style, ...props }: HudThemeProps) {
+  return <div {...props} className={`nr-theme ${mode === 'light' ? 'nr-light' : ''} ${className}`} style={{ ...themeVariables({ gradientIntensity, highContrast, scanlines, mode }), ...style } as CSSProperties} />;
 }
 
 export interface HudButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> { variant?: ButtonVariant }

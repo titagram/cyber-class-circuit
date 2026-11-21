@@ -29,15 +29,18 @@ export function getMenuGradient(intensity: number = tokens.gradients.defaultInte
   };
 }
 
-export interface ThemeOptions { gradientIntensity?: number; highContrast?: boolean; scanlines?: boolean }
+export interface ThemeOptions { gradientIntensity?: number; highContrast?: boolean; scanlines?: boolean; mode?: 'dark' | 'light' }
 
 /** Variabili condivise da CSS generato e adattatore React. Nessuna dipendenza DOM. */
 export function themeVariables(options: ThemeOptions = {}): Record<`--nr-${string}`, string> {
   const colors = Object.fromEntries(Object.entries(tokens.colors).map(([key, value]) => [`--nr-${key.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}`, value]));
-  return {
+  const appearance = options.mode === 'light' ? {} : {
     ...colors,
     '--nr-border': options.highContrast ? tokens.colors.coral : tokens.colors.border,
     '--nr-menu-gradient': getMenuGradient(options.gradientIntensity).css,
+  };
+  return {
+    ...appearance,
     '--nr-display-font': tokens.typography.web.display,
     '--nr-body-font': tokens.typography.web.body,
     '--nr-scan-opacity': options.scanlines ? '.045' : '0',
