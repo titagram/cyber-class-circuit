@@ -3,76 +3,94 @@ import { assert, describe, expect, it } from "vitest";
 import { lessonRegistry } from "@/components/lessons/registry";
 
 describe("Slide 1.4", () => {
-  it("cambia solo sessione e permesso sulla stessa lettura", () => {
+  function openPortal() {
     const Lesson = lessonRegistry["cybersecurity-1-4"];
     assert(Lesson);
     render(<Lesson />);
-    const status = screen.getByRole("status", { name: "Esito della richiesta" });
     const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
-    const storage = screen.getByRole("button", { name: "Storage privato" });
-    const permit = screen.getByRole("button", { name: "Con lettura" });
-    const request = screen.getAllByText("GET /api/documents/42")[0];
-    expect(permit).toBeDisabled();
-    expect(status).toHaveTextContent("401 Unauthorized");
-    expect(status).toHaveTextContent("Non valutato");
-    click("Sessione di Giulia");
-    expect(status).toHaveTextContent("403 Forbidden");
-    expect(storage).toHaveTextContent("Nessuna chiamata");
-    click("Storage privato");
-    expect(screen.getByRole("region", { name: "Interfaccia selezionata" })).toHaveTextContent(
-      "API dello storage è privata",
+    const notebook = within(screen.getByRole("region", { name: "Taccuino di osservazione" }));
+    const map = within(screen.getByRole("figure", { name: "Mappa a cipolla del portale" }));
+    function verify(index: number) {
+      const option = notebook.getAllByRole("radio")[index];
+      assert(option);
+      fireEvent.click(option);
+      click("Verifica l’ipotesi");
+    }
+    return { click, notebook, map, verify };
+  }
+
+  it("costruisce la mappa solo dalle verifiche e distingue pagina, lingua e PDF", () => {
+    const { click, notebook, map, verify } = openPortal();
+    expect(map.queryAllByRole("button")).toHaveLength(0);
+    expect(notebook.getByRole("button", { name: "Verifica l’ipotesi" })).toBeDisabled();
+    verify(1);
+    expect(notebook.getByRole("status")).toHaveTextContent("Ipotesi smentita");
+    expect(map.getAllByRole("button")).toHaveLength(1);
+    click("Catalogo");
+    expect(notebook.getByText("GET /documenti")).toBeVisible();
+    verify(1);
+    click("Lingua: English");
+    expect(notebook.getByText("GET /locales/en.json")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Catalogue" })).toBeVisible();
+    verify(0);
+    click("Open PDF");
+    expect(notebook.getByText(/401 Unauthorized/)).toBeVisible();
+    verify(1);
+    expect(map.getAllByRole("button")).toHaveLength(2);
+    click("Accedi come demo");
+    click("Open PDF");
+    expect(notebook.getByText(/403 Forbidden/)).toBeVisible();
+    fireEvent.click(screen.getByRole("checkbox"));
+    expect(notebook.getByText(/Content-Type: application.pdf/)).toBeVisible();
+    verify(1);
+    expect(map.getAllByRole("button")).toHaveLength(3);
+    expect(screen.getByRole("region", { name: "Inventario delle superfici" })).toHaveTextContent(
+      "Storage privato",
     );
-    expect(status).toHaveTextContent("403 Forbidden");
-    click("Con lettura");
-    expect(status).toHaveTextContent("200 OK");
-    expect(storage).toHaveTextContent("Byte restituiti");
-    expect(status).toHaveTextContent("propria identità tecnica");
-    expect(request).toHaveTextContent("GET /api/documents/42");
-    click("Senza sessione");
-    expect(permit).toBeDisabled();
-    expect(status).toHaveTextContent("401 Unauthorized");
-    click("Sessione di Giulia");
-    expect(status).toHaveTextContent("200 OK");
-    click("Senza lettura");
-    expect(status).toHaveTextContent("403 Forbidden");
   });
-  it("aggiunge e rimuove un ramo alla volta e mostra l’effetto della revoca", () => {
-    const Lesson = lessonRegistry["cybersecurity-1-4"];
-    assert(Lesson);
-    render(<Lesson />);
-    const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
-    const map = within(screen.getByRole("figure", { name: "Mappa delle funzioni di 42.pdf" }));
-    const detail = screen.getByRole("region", { name: "Percorso selezionato" });
-    expect(map.getByRole("button", { name: "Anteprima" })).toBeDisabled();
-    click("Attiva caricamento");
-    expect(map.getByText(/Nome e byte del PDF/)).toBeVisible();
-    click("Nelle funzioni web");
-    expect(screen.getByRole("status", { name: "Risposta sul caricamento" })).toHaveTextContent(
-      "Esatto",
-    );
+
+  it("mostra errori uniformi e un limite temporale deterministico", () => {
+    const { click, notebook, verify } = openPortal();
+    const select = (value: string) =>
+      fireEvent.change(screen.getByLabelText("Credenziali simulate"), { target: { value } });
+    for (const value of ["unknown", "password", "unknown"]) {
+      select(value);
+      click("Accedi come demo");
+      expect(notebook.getByText(/401 Unauthorized/)).toHaveTextContent("Credenziali non valide");
+    }
+    select("valid");
+    click("Accedi come demo");
+    expect(notebook.getByText(/429 Too Many Requests/)).toBeVisible();
+    verify(1);
+    click("Avanza di 60 s nel simulatore");
+    click("Accedi come demo");
+    expect(notebook.getByText(/Set-Cookie/)).toBeVisible();
+  });
+
+  it("segue ricerca, nuova versione, anteprima, link revocato e ripristino", () => {
+    const { click, notebook, verify } = openPortal();
+    click("Cerca");
+    expect(notebook.getByText("GET /api/search?q=bilancio")).toBeVisible();
+    verify(1);
+    expect(notebook.getByRole("status")).toHaveTextContent("parametro");
+    click("Accedi come demo");
+    click("Carica una versione di 42.pdf");
+    expect(notebook.getByText(/versione 2/)).toBeVisible();
+    verify(1);
+    expect(screen.getByRole("button", { name: "Genera anteprima" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("checkbox"));
     click("Genera anteprima");
-    expect(detail).toHaveTextContent("interpreta la prima pagina");
-    expect(map.getByText(/Storage → Generatore → Browser/)).toBeVisible();
-    click("Attiva link condiviso");
-    expect(detail).toHaveTextContent("token sia valido");
+    expect(notebook.getByText(/image.png/)).toBeVisible();
+    click("Crea link condiviso");
+    click("Apri link come collega");
+    expect(notebook.getByText(/200 OK/)).toBeVisible();
     click("Revoca il link");
-    expect(map.getByText("Nessun byte al destinatario")).toBeVisible();
-    click("Attiva ripristino");
-    expect(map.getByText("Backup → Servizio di ripristino → Storage")).toBeVisible();
-    expect(detail).toHaveTextContent("versione corrente");
-    click("Link condiviso");
-    expect(detail).toHaveTextContent("trova la revoca");
-    click("Prova con un nuovo link");
-    expect(map.getByText("Token al gestore · PDF al destinatario")).toBeVisible();
-    for (const undo of [
-      "Disattiva ripristino",
-      "Disattiva condivisione",
-      "Disattiva anteprima",
-      "Disattiva caricamento",
-    ])
-      click(undo);
-    expect(map.getByRole("button", { name: "Caricamento" })).toBeDisabled();
-    expect(detail).toHaveTextContent("sola lettura");
+    click("Apri link come collega");
+    expect(notebook.getByText(/410 Gone/)).toBeVisible();
+    click("Ripristina v1 come operatore demo");
+    expect(notebook.getByText(/ripristinata: 1/)).toBeVisible();
+    click("Apri PDF");
+    expect(notebook.getByText(/versione 1/)).toBeVisible();
   });
 });
 
