@@ -14,6 +14,7 @@ const boxes: Record<NodeName, Box> = {
   Schermo: box(51, 78, 74),
   Browser: box(162, 78, 90),
   "Reverse proxy": box(354, 78, 118),
+  "Server HTTP": box(354, 144, 110),
   Backend: box(217, 148, 210),
   Controller: box(84, 182, 114),
   Sessione: box(219, 182, 100),
@@ -28,14 +29,16 @@ const boxes: Record<NodeName, Box> = {
 type Link = { from: NodeName; to: NodeName; bends: Point[] };
 const link = (from: NodeName, to: NodeName, ...bends: Point[]): Link => ({ from, to, bends });
 const external = [
-  link("Giulia", "Browser", [51, 49], [145, 49], [145, 78]),
+  link("Schermo", "Giulia"),
+  link("Giulia", "Browser", [101, 23], [101, 49], [145, 49], [145, 78]),
   link("Cache DNS", "Browser"),
   link("Resolver DNS", "Browser", [299, 49], [181, 49], [181, 78]),
   link("Browser", "Schermo"),
   link("Browser", "Reverse proxy"),
 ];
 const modules = [
-  link("Reverse proxy", "Router"),
+  link("Reverse proxy", "Server HTTP"),
+  link("Server HTTP", "Router"),
   link("Router", "Sessione"),
   link("Sessione", "Controller"),
   link("Controller", "Servizio file"),
@@ -44,7 +47,7 @@ const modules = [
   link("Repository", "Database"),
   link("Servizio file", "Client storage", [145, 245], [145, 268], [354, 268]),
   link("Client storage", "Storage"),
-  link("Controller", "Reverse proxy", [84, 108], [330, 108], [330, 78]),
+  link("Controller", "Server HTTP", [84, 144]),
 ];
 const folded = [
   link("Reverse proxy", "Backend", [354, 113], [217, 113]),
@@ -60,6 +63,7 @@ const externalNames: NodeName[] = [
   "Reverse proxy",
 ];
 const inside: NodeName[] = [
+  "Server HTTP",
   "Router",
   "Sessione",
   "Controller",
@@ -97,7 +101,7 @@ const line = (points: Point[]) =>
 
 export function RequestArchitecture({ step }: { step: Hop }) {
   const marker = useId();
-  const expanded = step.phase > 0 || step.to === "Router";
+  const expanded = step.phase > 0 || step.to === "Server HTTP";
   const layout = expanded
     ? boxes
     : { ...boxes, Database: box(84, 210, 112), Storage: box(354, 210, 112) };
@@ -114,12 +118,29 @@ export function RequestArchitecture({ step }: { step: Hop }) {
     "Database",
     "Storage",
   ];
+  const proxyPeer =
+    step.from === "Reverse proxy" ? step.to : step.to === "Reverse proxy" ? step.from : null;
+  const human = step.channel === "interazione umana";
   return (
     <figure
       className="request-architecture"
       aria-label="Architettura della richiesta"
       data-expanded={expanded}
     >
+      <dl className="request-http-roles" aria-label="Ruoli HTTP sui due collegamenti">
+        <div data-active={proxyPeer === "Browser"}>
+          <dt>Collegamento con il browser</dt>
+          <dd>
+            Browser <b>client</b> · Proxy <b>server</b>
+          </dd>
+        </div>
+        <div data-active={proxyPeer === "Server HTTP"}>
+          <dt>Collegamento con il backend</dt>
+          <dd>
+            Proxy <b>client</b> · Backend <b>server</b>
+          </dd>
+        </div>
+      </dl>
       <div className="request-map-frame">
         <svg
           viewBox={"0 0 438 " + (expanded ? 410 : 235)}
@@ -161,7 +182,12 @@ export function RequestArchitecture({ step }: { step: Hop }) {
             Servizi dati privati
           </text>
           {edges.map((e) => (
-            <path key={e.from + e.to} d={line(wire(e, layout))} className="request-wire" />
+            <path
+              key={e.from + e.to}
+              d={line(wire(e, layout))}
+              className="request-wire"
+              data-human={e.from === "Giulia" || e.to === "Giulia"}
+            />
           ))}
           {names.map((name) => {
             const {
@@ -190,6 +216,7 @@ export function RequestArchitecture({ step }: { step: Hop }) {
             data-from={step.from}
             data-to={step.to}
             className="request-transfer"
+            data-human={human}
           >
             <path d={path} markerEnd={"url(#" + marker + ")"} />
             <circle r="4" style={{ offsetPath: 'path("' + path + '")' }} />

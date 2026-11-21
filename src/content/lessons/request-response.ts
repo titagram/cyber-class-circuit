@@ -5,7 +5,7 @@ export const requestLesson = {
 export const phases = [
   "Dal browser al proxy",
   "Dentro l’applicazione",
-  "Ritorno al browser",
+  "Ritorno a Giulia",
 ] as const;
 export type TraceNode =
   | "Giulia"
@@ -14,6 +14,7 @@ export type TraceNode =
   | "Resolver DNS"
   | "Cache DNS"
   | "Reverse proxy"
+  | "Server HTTP"
   | "Router"
   | "Sessione"
   | "Controller"
@@ -27,7 +28,7 @@ export type Hop = {
   phase: number;
   from: TraceNode;
   to: TraceNode;
-  channel: "rete" | "chiamata interna" | "elaborazione locale";
+  channel: "rete" | "chiamata interna" | "elaborazione locale" | "interazione umana";
   title: string;
   input: string;
   output: string;
@@ -54,7 +55,7 @@ const start = hop(
   0,
   "Giulia",
   "Browser",
-  local,
+  "interazione umana",
   "Il clic separa nome e percorso",
   "https://files.example/api/files/42",
   "host = files.example\npercorso = /api/files/42",
@@ -125,22 +126,33 @@ const front = [
     "Parte la richiesta HTTP",
     "GET /api/files/42 HTTP/1.1\nHost: files.example\nCookie: session=demo",
     "Metodo GET · file 42 · cookie di sessione",
-    "Il metodo indica la lettura e il percorso identifica la risorsa. Il browser include il cookie valido per questo sito. Il proxy termina TLS e legge la richiesta.",
+    "Il metodo indica la lettura e il percorso identifica la risorsa. Il browser include il cookie valido per questo sito. Il reverse proxy riceve la richiesta come server HTTP del browser.",
     "GET /api/files/42 + cookie",
   ),
   hop(
     0,
     "Reverse proxy",
-    "Router",
+    "Server HTTP",
     net,
     "Il proxy sceglie l’applicazione",
     "Host: files.example\nPercorso: /api/files/42",
     "Richiesta inoltrata al backend file",
-    "La configurazione del proxy associa questo sito e prefisso al backend. Sul collegamento interno parte una richiesta verso quel servizio.",
+    "Il proxy sceglie il backend in base al sito e al percorso. Qui fa da client HTTP e invia la richiesta al server HTTP del backend su un collegamento distinto da quello del browser.",
     "GET /api/files/42 + cookie",
   ),
 ];
 const application = [
+  hop(
+    1,
+    "Server HTTP",
+    "Router",
+    call,
+    "Il server HTTP consegna la richiesta al router",
+    "GET /api/files/42 + cookie",
+    "Richiesta disponibile all’applicazione",
+    "Il server HTTP del backend riceve la richiesta dal proxy. La passa al framework, che usa il router per scegliere la funzione da eseguire.",
+    "Metodo, percorso e cookie",
+  ),
   hop(
     1,
     "Router",
@@ -308,12 +320,23 @@ function response(allowed: boolean) {
     hop(
       2,
       "Controller",
-      "Reverse proxy",
-      net,
-      "L’applicazione prepara la risposta",
+      "Server HTTP",
+      call,
+      "Il controller prepara la risposta",
       allowed ? "Flusso aperto sul PDF" : "Accesso negato",
       headers,
-      "Il controller rappresenta l’esito con uno stato HTTP e indica il tipo del corpo. Il server invia la risposta al proxy.",
+      "Il controller restituisce al framework una risposta con stato, intestazioni e corpo. Il corpo è un flusso di byte per il PDF oppure il testo del diniego. Il server HTTP si occupa di trasmetterla.",
+      allowed ? "Risposta 200 + flusso PDF" : "Risposta 403 + testo",
+    ),
+    hop(
+      2,
+      "Server HTTP",
+      "Reverse proxy",
+      net,
+      "Il proxy riceve le intestazioni come client",
+      headers,
+      "Stato e tipo del corpo ricevuti dal proxy",
+      "Il server HTTP risponde sulla connessione aperta dal proxy. Il proxy riceve la risposta in qualità di client su questo tratto.",
       headers,
     ),
     hop(
@@ -326,12 +349,12 @@ function response(allowed: boolean) {
       allowed
         ? "Il browser prepara il visualizzatore PDF"
         : "Il browser prepara una risposta testuale",
-      "Il proxy inoltra la risposta sul canale con il browser. Stato e tipo di contenuto sono disponibili prima del completamento del corpo.",
+      "Verso il browser il proxy è il server HTTP. Invia le intestazioni sul collegamento esterno. Stato e tipo di contenuto sono disponibili prima del completamento del corpo.",
       headers,
     ),
     hop(
       2,
-      "Controller",
+      "Server HTTP",
       "Reverse proxy",
       net,
       "Il backend invia il corpo",
@@ -365,6 +388,19 @@ function response(allowed: boolean) {
         ? "Quando dispone dei dati sufficienti, il visualizzatore interpreta il PDF e disegna la pagina sullo schermo di Giulia."
         : "Il browser mostra il testo restituito dal backend. Nessun byte del file è stato letto dallo storage o consegnato al browser.",
       allowed ? "Pagina 1 disegnata" : "Messaggio di errore",
+    ),
+    hop(
+      2,
+      "Schermo",
+      "Giulia",
+      "interazione umana",
+      allowed ? "Giulia legge il file" : "Giulia legge il diniego",
+      allowed ? "Prima pagina del PDF sullo schermo" : "Messaggio di accesso negato sullo schermo",
+      allowed ? "File 42.pdf · pagina 1" : "403 · Accesso al file negato",
+      allowed
+        ? "Lo schermo mostra la pagina disegnata dal browser. Giulia può finalmente leggere il file che aveva aperto con il clic iniziale."
+        : "Giulia vede il messaggio disegnato dal browser e sa che il file richiesto le è precluso.",
+      allowed ? "Prima pagina visibile" : "Messaggio visibile",
     ),
   ];
 }

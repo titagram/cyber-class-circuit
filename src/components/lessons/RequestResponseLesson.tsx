@@ -127,7 +127,7 @@ export function RequestResponseLesson() {
                 </div>
               </div>
               <p>{step.why}</p>
-              {index === last && (
+              {(step.to === "Schermo" || step.to === "Giulia") && (
                 <div className="web-rendered" data-allowed={allowed}>
                   <FileText aria-hidden="true" />
                   <div>

@@ -44,6 +44,28 @@ describe("Request e response", () => {
       ),
     ).toBe(false);
   });
+  it("mantiene i ruoli HTTP alla risposta e termina con la lettura di Giulia", () => {
+    for (const allowed of [true, false]) {
+      const trace = buildRequestTrace(false, allowed);
+      const http = trace
+        .filter((s) => s.phase === 2 && s.channel === "rete")
+        .map((s) => [s.from, s.to]);
+      expect(http).toEqual([
+        ["Server HTTP", "Reverse proxy"],
+        ["Reverse proxy", "Browser"],
+        ["Server HTTP", "Reverse proxy"],
+        ["Reverse proxy", "Browser"],
+      ]);
+      expect(trace.slice(-2).map((s) => [s.from, s.to, s.channel])).toEqual([
+        ["Browser", "Schermo", "elaborazione locale"],
+        ["Schermo", "Giulia", "interazione umana"],
+      ]);
+      expect(trace.find((s) => s.from === "Controller" && s.phase === 2)).toMatchObject({
+        to: "Server HTTP",
+        channel: "chiamata interna",
+      });
+    }
+  });
   it("mantiene la mappa e orienta ogni scambio anche al ritorno", () => {
     const { rerender } = render(<RequestArchitecture step={buildRequestTrace(false, true)[0]} />);
     const map = screen.getByRole("figure", { name: "Architettura della richiesta" });
@@ -51,7 +73,7 @@ describe("Request e response", () => {
       for (const allowed of [false, true]) {
         let entered = false;
         for (const step of buildRequestTrace(cached, allowed)) {
-          if (step.to === "Router") entered = true;
+          if (step.to === "Server HTTP") entered = true;
           rerender(<RequestArchitecture step={step} />);
           expect(map).toHaveAttribute("data-expanded", String(entered));
           expect(map.querySelector('[data-role="source"]')).toHaveTextContent(step.from);
