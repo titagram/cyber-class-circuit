@@ -3,28 +3,52 @@ import { assert, describe, expect, it } from "vitest";
 import { lessonRegistry } from "@/components/lessons/registry";
 
 describe("Slide 1.4", () => {
-  it("collega gli anelli agli ingressi e distingue l’identità del servizio", () => {
+  it("cambia solo sessione e permesso sulla stessa lettura", () => {
     const Lesson = lessonRegistry["cybersecurity-1-4"];
     assert(Lesson);
     render(<Lesson />);
-    fireEvent.click(screen.getByRole("button", { name: "Servizi interni" }));
-    expect(screen.getByText(/Da Internet puoi interrogare/)).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Servizio backend" }));
-    expect(screen.getByText(/limitano le chiavi/)).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Storage del file" }));
-    expect(screen.getByText(/richiesta firmata/)).toBeVisible();
+    const status = screen.getByRole("status", { name: "Esito della richiesta" });
+    const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+    const storage = screen.getByRole("button", { name: "Storage privato" });
+    const permit = screen.getByRole("button", { name: "Con lettura" });
+    const request = screen.getAllByText("GET /api/documents/42")[0];
+    expect(permit).toBeDisabled();
+    expect(status).toHaveTextContent("401 Unauthorized");
+    expect(status).toHaveTextContent("Non valutato");
+    click("Sessione di Giulia");
+    expect(status).toHaveTextContent("403 Forbidden");
+    expect(storage).toHaveTextContent("Nessuna chiamata");
+    click("Storage privato");
+    expect(screen.getByRole("region", { name: "Interfaccia selezionata" })).toHaveTextContent(
+      "API dello storage è privata",
+    );
+    expect(status).toHaveTextContent("403 Forbidden");
+    click("Con lettura");
+    expect(status).toHaveTextContent("200 OK");
+    expect(storage).toHaveTextContent("Byte restituiti");
+    expect(status).toHaveTextContent("propria identità tecnica");
+    expect(request).toHaveTextContent("GET /api/documents/42");
+    click("Senza sessione");
+    expect(permit).toBeDisabled();
+    expect(status).toHaveTextContent("401 Unauthorized");
+    click("Sessione di Giulia");
+    expect(status).toHaveTextContent("200 OK");
+    click("Senza lettura");
+    expect(status).toHaveTextContent("403 Forbidden");
   });
   it("rende osservabile il nuovo ingresso sulla porta esistente", () => {
     const Lesson = lessonRegistry["cybersecurity-1-4"];
     assert(Lesson);
     render(<Lesson />);
     fireEvent.click(screen.getByRole("button", { name: "Attiva caricamento" }));
-    expect(screen.getByText(/POST .api.documents · nome/)).toBeVisible();
+    expect(screen.getByText("POST /api/documents · caricamento")).toBeVisible();
     expect(screen.getByText("HTTPS · 443")).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Nelle funzioni web" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Esatto");
+    expect(screen.getByRole("status", { name: "Risposta sul caricamento" })).toHaveTextContent(
+      "Esatto",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Disattiva caricamento" }));
-    expect(screen.queryByRole("button", { name: "Carica file" })).not.toBeInTheDocument();
+    expect(screen.queryByText("POST /api/documents · caricamento")).not.toBeInTheDocument();
   });
 });
 
