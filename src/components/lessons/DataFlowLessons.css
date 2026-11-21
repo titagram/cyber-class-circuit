@@ -183,4 +183,146 @@
   .surface-map .df-map {
     height: 400px;
   }
+
+  .surface-map .df-node {
+    width: 112px;
+    min-height: 84px;
+    padding: 0.45rem;
+  }
+}
+
+.surface-story {
+  display: grid;
+  gap: 0.7rem;
+  border: 1px solid var(--nr-border);
+  border-top: 2px solid var(--nr-cyan);
+  padding: clamp(0.7rem, 2vw, 1.1rem);
+  background: var(--nr-panel-end);
+}
+
+.surface-story-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+}
+
+.surface-story h3 {
+  scroll-margin-top: 5rem;
+  color: var(--nr-text);
+  font: 700 clamp(1.2rem, 3vw, 1.55rem) / 1.15 var(--nr-display-font);
+}
+
+.surface-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--nr-muted);
+  font: 700 0.86rem / 1.25 var(--nr-display-font);
+}
+
+.surface-picker select {
+  min-height: 2.3rem;
+  max-width: 100%;
+  border: 1px solid var(--nr-border);
+  padding: 0.25rem 0.5rem;
+  background: var(--nr-panel);
+  color: var(--nr-text);
+}
+
+.surface-phases {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.surface-phases button {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 2.8rem;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid var(--nr-border);
+  padding: 0.4rem 0.55rem;
+  background: var(--nr-panel);
+  color: var(--nr-muted);
+  text-align: start;
+  font: 700 clamp(0.76rem, 2vw, 0.98rem) / 1.15 var(--nr-display-font);
+  cursor: pointer;
+}
+
+.surface-phases button:hover {
+  color: var(--nr-text);
+  border-color: var(--nr-cyan);
+}
+
+.surface-phases button[aria-current="step"] {
+  border-color: var(--nr-yellow);
+  background: color-mix(in srgb, var(--nr-yellow) 10%, var(--nr-panel));
+  color: var(--nr-yellow);
+}
+
+.surface-phases svg,
+.surface-scene svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+
+.surface-scene {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+  gap: 0.55rem;
+  min-height: 6rem;
+}
+
+.surface-scene > div {
+  border-left: 2px solid var(--nr-cyan);
+  padding: 0.65rem 0.85rem;
+  background: var(--nr-panel);
+}
+
+.surface-scene h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+  color: var(--nr-cyan);
+  font: 700 1.09rem / 1.2 var(--nr-display-font);
+}
+
+.surface-scene p {
+  max-width: 80ch;
+  color: var(--nr-text);
+  font-size: 0.91rem;
+  line-height: 1.5;
+}
+
+.surface-scene .surface-boundary {
+  margin-bottom: 0.25rem;
+  color: var(--nr-muted);
+  font-weight: 600;
+}
+
+.surface-outcome strong {
+  color: var(--nr-coral);
+}
+
+.surface-story-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 480px) {
+  .surface-phases button {
+    flex-direction: column;
+    align-items: flex-start;
+    padding-inline: 0.35rem;
+  }
 }

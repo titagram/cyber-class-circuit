@@ -51,11 +51,12 @@ export function DataFlowExplorer({
   mode = "explore",
   highlight,
   showTrustBoundaries = false,
-  focusNodeId,
+  focusNodeIds,
+  nodeSelection,
   className = "",
 }: DataFlowExplorerProps) {
   const mapScroll = useRef<HTMLDivElement>(null);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [inspectedNodeId, setInspectedNodeId] = useState<string | null>(null);
   const [eventIndex, setEventIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -63,7 +64,10 @@ export function DataFlowExplorer({
     () => config.nodes.filter((node) => node.level <= level),
     [config.nodes, level],
   );
-  const visibleNodeIds = useMemo(() => new Set(visibleNodes.map((node) => node.id)), [visibleNodes]);
+  const visibleNodeIds = useMemo(
+    () => new Set(visibleNodes.map((node) => node.id)),
+    [visibleNodes],
+  );
   const visibleConnections = useMemo(
     () =>
       config.connections.filter(
@@ -84,20 +88,27 @@ export function DataFlowExplorer({
   const activeNodes = new Set(activeEvent?.nodes ?? highlight?.nodes ?? []);
   const secondaryNodes = new Set(highlight?.secondaryNodes ?? []);
   const transfers = new Map(
-    activeEvent?.transfers.map(({ connection, direction }) => [connection, direction]),
+    (activeEvent?.transfers ?? highlight?.transfers)?.map(({ connection, direction }) => [
+      connection,
+      direction,
+    ]),
   );
-  const activeConnections = new Set(activeEvent ? transfers.keys() : highlight?.connections);
+  const activeConnections = new Set([
+    ...transfers.keys(),
+    ...(activeEvent ? [] : (highlight?.connections ?? [])),
+  ]);
+  const selectedNodeId = nodeSelection ? nodeSelection.id : inspectedNodeId;
   const activeBoundaries = new Set(highlight?.boundaries ?? []);
   const selectedNode = visibleNodes.find((node) => node.id === selectedNodeId);
 
   useEffect(() => {
-    if (!focusNodeId) return;
     const map = mapScroll.current;
-    const node = visibleNodes.find(({ id }) => id === focusNodeId);
-    if (map && node && map.scrollWidth > map.clientWidth) {
-      map.scrollLeft = (node.x / config.width) * map.scrollWidth - map.clientWidth / 2;
-    }
-  }, [config.width, focusNodeId, visibleNodes]);
+    if (!map || !focusNodeIds || map.scrollWidth <= map.clientWidth) return;
+    const points = visibleNodes.filter(({ id }) => focusNodeIds.includes(id)).map(({ x }) => x);
+    if (points.length === 0) return;
+    const middle = (Math.min(...points) + Math.max(...points)) / 2;
+    map.scrollLeft = (middle / config.width) * map.scrollWidth - map.clientWidth / 2;
+  }, [config.width, focusNodeIds, visibleNodes]);
 
   useEffect(() => {
     if (!isPlaying || mode !== "simulate" || config.events.length < 2) return;
@@ -128,7 +139,7 @@ export function DataFlowExplorer({
   function resetSimulation() {
     setIsPlaying(false);
     setEventIndex(0);
-    setSelectedNodeId(null);
+    setInspectedNodeId(null);
   }
 
   return (
@@ -218,12 +229,19 @@ export function DataFlowExplorer({
                   key={node.id}
                   type="button"
                   className={`df-node${active ? " df-node-active" : ""}${secondary ? " df-node-secondary" : ""}${selectedNodeId === node.id ? " df-node-selected" : ""}`}
-                  style={{ left: `${(node.x / config.width) * 100}%`, top: `${(node.y / config.height) * 100}%` }}
+                  style={{
+                    left: `${(node.x / config.width) * 100}%`,
+                    top: `${(node.y / config.height) * 100}%`,
+                  }}
                   aria-pressed={selectedNodeId === node.id}
                   aria-label={`Ispeziona ${node.label}`}
                   data-testid={`data-flow-node-${node.id}`}
                   data-highlighted={active || secondary ? "true" : "false"}
-                  onClick={() => setSelectedNodeId((current) => (current === node.id ? null : node.id))}
+                  onClick={() =>
+                    nodeSelection
+                      ? nodeSelection.onChange(node.id)
+                      : setInspectedNodeId((current) => (current === node.id ? null : node.id))
+                  }
                 >
                   <Icon aria-hidden="true" />
                   <span>{node.label}</span>
@@ -234,7 +252,11 @@ export function DataFlowExplorer({
           </div>
         </div>
         <div className="df-map-footer">
-          <span className="df-map-instruction">Seleziona un componente per ispezionarlo.</span>
+          <span className="df-map-instruction">
+            {nodeSelection
+              ? "Seleziona un componente per seguirne lo scenario."
+              : "Seleziona un componente per ispezionarlo."}
+          </span>
           <span className="df-scroll-hint">Scorri la mappa per vedere tutti i componenti →</span>
           <div className="df-map-legend" aria-label="Legenda della mappa">
             <span>
@@ -254,13 +276,17 @@ export function DataFlowExplorer({
         </div>
       </div>
 
-      {selectedNode && <NodeInspector node={selectedNode} onClose={() => setSelectedNodeId(null)} />}
+      {!nodeSelection && selectedNode && (
+        <NodeInspector node={selectedNode} onClose={() => setInspectedNodeId(null)} />
+      )}
 
       {mode === "simulate" && activeEvent && (
         <section className="df-simulation" aria-label="Segui una richiesta">
           <div className="df-simulation-heading">
             <h3>Segui una richiesta</h3>
-            <span>Passo {eventIndex + 1} di {config.events.length}</span>
+            <span>
+              Passo {eventIndex + 1} di {config.events.length}
+            </span>
           </div>
 
           <ol className="df-event-timeline" aria-label="Passaggi della richiesta">
@@ -281,7 +307,13 @@ export function DataFlowExplorer({
           <div className="df-simulation-controls">
             <Button onClick={togglePlayback} disabled={config.events.length < 2}>
               {isPlaying ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
-              {isPlaying ? "Pausa" : eventIndex === config.events.length - 1 ? "Riproduci di nuovo" : eventIndex > 0 ? "Riprendi" : "Avvia"}
+              {isPlaying
+                ? "Pausa"
+                : eventIndex === config.events.length - 1
+                  ? "Riproduci di nuovo"
+                  : eventIndex > 0
+                    ? "Riprendi"
+                    : "Avvia"}
             </Button>
             <Button
               variant="outline"
@@ -322,18 +354,28 @@ function NodeInspector({ node, onClose }: { node: ArchitectureNode; onClose: () 
           <span className="lesson-label">{roleLabels[node.dataRole]}</span>
           <h4>{node.label}</h4>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label={`Chiudi dettaglio ${node.label}`}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          aria-label={`Chiudi dettaglio ${node.label}`}
+        >
           <X aria-hidden="true" />
         </Button>
       </div>
       <p>{node.description}</p>
       <ul>
-        {node.responsibilities.map((responsibility) => <li key={responsibility}>{responsibility}</li>)}
+        {node.responsibilities.map((responsibility) => (
+          <li key={responsibility}>{responsibility}</li>
+        ))}
       </ul>
     </aside>
   );
 }
 
-export function getConnection(config: DataFlowExplorerProps["config"], id: string): ArchitectureConnection | undefined {
+export function getConnection(
+  config: DataFlowExplorerProps["config"],
+  id: string,
+): ArchitectureConnection | undefined {
   return config.connections.find((connection) => connection.id === id);
 }

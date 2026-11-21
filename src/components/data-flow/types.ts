@@ -66,6 +66,7 @@ export type DataFlowHighlight = {
   nodes?: readonly string[];
   secondaryNodes?: readonly string[];
   connections?: readonly string[];
+  transfers?: DataFlowEvent["transfers"];
   boundaries?: readonly string[];
 };
 
@@ -75,6 +76,7 @@ export type DataFlowExplorerProps = {
   mode?: "explore" | "simulate";
   highlight?: DataFlowHighlight;
   showTrustBoundaries?: boolean;
-  focusNodeId?: string;
+  focusNodeIds?: readonly string[];
+  nodeSelection?: { id: string | null; onChange: (nodeId: string) => void };
   className?: string;
 };

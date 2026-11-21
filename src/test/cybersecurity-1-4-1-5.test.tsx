@@ -3,25 +3,55 @@ import { assert, describe, expect, it } from "vitest";
 import { lessonRegistry } from "@/components/lessons/registry";
 
 describe("Slide 1.4", () => {
-  it("collega la prospettiva sulla rete a un confine e quella sullo storage a un nodo", () => {
+  it("sincronizza i nodi con lo scenario e mostra dove si ferma un accesso alla cache", () => {
     const Lesson = lessonRegistry["cybersecurity-1-4"];
     assert(Lesson, "La lezione deve essere registrata");
     render(<Lesson />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Ispeziona Cache Redis" }));
+    const panel = within(screen.getByRole("tabpanel", { name: "Archivi e copie" }));
+    expect(panel.getByRole("heading", { name: "Cache Redis" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Ispeziona Cache Redis" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(panel.getByText(/servizio interno/)).toBeVisible();
+    expect(panel.queryByText("Controllo da verificare")).not.toBeInTheDocument();
+
+    fireEvent.click(panel.getByRole("button", { name: "Segui il percorso" }));
+    const link = screen.getByTestId("data-flow-connection-backend-cache");
+    expect(link).toHaveAttribute("data-highlighted", "true");
+    expect(link).toHaveAttribute("data-direction", "forward");
+    expect(screen.getByText("Applicazione ↔ dati")).toHaveClass("df-boundary-label-active");
+
+    fireEvent.click(panel.getByRole("button", { name: "Verifica il controllo" }));
+    expect(panel.getByText("Accesso a Redis negato")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ispeziona Object storage" }));
+    expect(panel.getByRole("heading", { name: "Object storage" })).toBeVisible();
+    expect(panel.queryByText("Accesso a Redis negato")).not.toBeInTheDocument();
+    expect(panel.getByRole("button", { name: "Segui il percorso" })).toBeVisible();
+    expect(link).toHaveAttribute("data-highlighted", "false");
+  });
+
+  it("permette di passare dalle icone al caso della rete senza una selezione residua", () => {
+    const Lesson = lessonRegistry["cybersecurity-1-4"];
+    assert(Lesson, "La lezione deve essere registrata");
+    render(<Lesson />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Ispeziona Backend" }));
     fireEvent.click(screen.getByRole("tab", { name: "Collegamento di rete" }));
+    const panel = within(screen.getByRole("tabpanel", { name: "Collegamento di rete" }));
+    expect(screen.getByRole("button", { name: "Ispeziona Backend" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    fireEvent.click(panel.getByRole("button", { name: "Segui il percorso" }));
     expect(screen.getByTestId("data-flow-connection-browser-proxy")).toHaveAttribute(
       "data-highlighted",
       "true",
     );
     expect(screen.getByText("Utente ↔ servizio")).toHaveClass("df-boundary-label-active");
-    expect(screen.getByText("Controllo da verificare")).toBeVisible();
-
-    fireEvent.click(screen.getByRole("tab", { name: "Archivi e copie" }));
-    expect(screen.getByTestId("data-flow-node-backup")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("data-flow-connection-browser-proxy")).toHaveAttribute(
-      "data-highlighted",
-      "false",
-    );
   });
 });
 
