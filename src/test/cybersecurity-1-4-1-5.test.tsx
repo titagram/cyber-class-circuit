@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { assert, describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { assert, describe, expect, it, vi } from "vitest";
 import { lessonRegistry } from "@/components/lessons/registry";
 
 describe("Slide 1.4", () => {
@@ -60,6 +60,57 @@ describe("Slide 1.4", () => {
     expect(trace).toHaveTextContent("Bearer api-demo");
     expect(trace).toHaveTextContent("Programma esterno autorizzato");
     expect(map).toHaveTextContent("Ingressi osservati (4)");
+  });
+
+  it("anima il download e distingue il modulo che decide dal servizio consultato", () => {
+    vi.useFakeTimers();
+    try {
+      const { click, map } = open();
+      const next = () => click("Passaggio successivo");
+      const caption = () => within(map).getByText(/^[0-9]+\/[0-9]+ ·/).parentElement!;
+      click("Scarica senza sessione");
+      expect(caption()).toHaveTextContent("Esterno · Richiesta");
+      act(() => vi.advanceTimersByTime(2600));
+      expect(caption()).toHaveTextContent("Reverse proxy");
+      next();
+      expect(caption()).toHaveTextContent("Anello 2 · Download fermatoGestore di sessione");
+      expect(caption()).toHaveTextContent("401 Unauthorized");
+      act(() => vi.advanceTimersByTime(6000));
+      expect(caption()).toHaveTextContent("Gestore di sessione");
+      next();
+      next();
+      expect(caption()).toHaveTextContent("Esterno · RispostaBrowser di Giulia");
+      click("Rivedi");
+      expect(caption()).toHaveTextContent("1/5");
+      click("Riprova con sessione, senza permesso");
+      next();
+      next();
+      next();
+      expect(caption()).toHaveTextContent("Anello 3 · RichiestaDatabase dei metadati");
+      next();
+      expect(caption()).toHaveTextContent("Anello 2 · Download fermatoModulo di autorizzazione");
+      expect(caption()).toHaveTextContent("403 Forbidden");
+      click("Concedi la lettura e riprova");
+      next();
+      next();
+      next();
+      next();
+      expect(caption()).toHaveTextContent("Anello 2 · Lettura consentita");
+      next();
+      expect(caption()).toHaveTextContent("Anello 3 · RichiestaStorage privato");
+      next();
+      next();
+      next();
+      expect(caption()).toHaveTextContent("200 OK · application/pdf");
+      expect(caption()).toHaveTextContent("Autorizzata all’anello 2");
+      expect(screen.getByRole("button", { name: "Passaggio successivo" })).toBeDisabled();
+      click("Passaggio precedente");
+      expect(caption()).toHaveTextContent("Reverse proxy");
+      click("Scarica 42.pdf");
+      expect(caption()).toHaveTextContent("1/9");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("propaga versione e revoca fra scene senza far ripartire il portale", () => {

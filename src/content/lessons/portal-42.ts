@@ -53,6 +53,7 @@ type Exchange = {
   response: string;
   effect: string;
   path: Path;
+  readCase?: keyof typeof readCases;
 };
 const guest = "Giulia dal browser, senza sessione";
 const signed = "Giulia dal browser, con sessione";
@@ -138,7 +139,7 @@ export function perform(action: Action, portal: Portal, inputs: Inputs) {
     case "read": {
       const kind = action === "visitor" ? "visitor" : inputs.allowed ? "allowed" : "denied";
       const read = readCases[kind];
-      return result(
+      const exchange = result(
         action === "visitor" ? guest : signed,
         readRequest + (action === "visitor" ? "" : cookie),
         kind === "allowed"
@@ -150,6 +151,8 @@ export function perform(action: Action, portal: Portal, inputs: Inputs) {
           ? ["Download", "Sessione"]
           : ["Download", "Autorizzazione", kind === "allowed" ? "Metadati e storage" : "Metadati"],
       );
+      exchange.trace.readCase = kind;
+      return exchange;
     }
     case "login": {
       const request = "POST /login\nAccount: Giulia · password dimostrativa";

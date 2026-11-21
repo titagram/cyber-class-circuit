@@ -311,3 +311,113 @@
   max-height: 18vh;
   overflow: auto;
 }
+
+.portal-trail {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.portal-trail polyline {
+  fill: none;
+  stroke: var(--nr-cyan);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.portal-packet,
+.portal-decision-pin {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  width: 1.2rem;
+  height: 1.2rem;
+  color: var(--nr-panel);
+  border: 2px solid var(--nr-panel-end);
+  border-radius: 50%;
+  background: var(--nr-cyan);
+}
+.portal-packet {
+  transition:
+    left 0.65s ease-in-out,
+    top 0.65s ease-in-out;
+  box-shadow: 0 0 0 1px var(--nr-cyan);
+}
+.portal-packet svg,
+.portal-decision-pin svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 3;
+}
+.portal-decision-pin[data-phase="stop"],
+.portal-packet[data-phase="stop"] {
+  background: var(--nr-coral);
+  border-radius: 25%;
+}
+.portal-packet[data-phase="response"] {
+  background: var(--nr-yellow, var(--nr-cyan));
+}
+.portal-map .ring[data-current="true"] {
+  outline: 2px solid var(--nr-cyan);
+  outline-offset: 1px;
+}
+.portal-layers [aria-current="step"] strong {
+  color: var(--nr-cyan);
+}
+.portal-step {
+  margin: 0.6rem 0 0.4rem;
+  border-left: 3px solid var(--nr-cyan);
+  background: var(--nr-panel-end);
+  padding: 0.35rem 0.6rem;
+  overflow-wrap: anywhere;
+}
+.portal-step[data-phase="stop"] {
+  border-color: var(--nr-coral);
+}
+.portal-step strong {
+  font: 700 1.1rem var(--nr-display-font);
+}
+.portal-step p {
+  font-size: 0.93rem;
+  line-height: 1.35;
+}
+.portal-playback,
+.portal-playback button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.portal-playback button {
+  min-height: 2rem;
+}
+@media (max-width: 900px), (max-height: 540px) {
+  .portal-step {
+    margin: 0.25rem 0;
+    padding: 0.2rem 0.45rem;
+  }
+  .portal-step small {
+    font-size: 0.73rem;
+  }
+  .portal-step p {
+    font-size: 0.82rem;
+    line-height: 1.24;
+  }
+  .portal-packet,
+  .portal-decision-pin {
+    width: 0.82rem;
+    height: 0.82rem;
+    border-width: 1px;
+  }
+  .portal-playback button {
+    padding: 0.2rem 0.6rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-packet {
+    transition: none;
+  }
+}

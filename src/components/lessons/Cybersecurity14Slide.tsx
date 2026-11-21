@@ -1,14 +1,5 @@
 import { useState } from "react";
-import {
-  ArrowDownToLine,
-  ArrowRight,
-  FileText,
-  Layers,
-  Network,
-  Send,
-  User,
-  Users,
-} from "lucide-react";
+import { ArrowDownToLine, ArrowRight, FileText, Network, Send, User, Users } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import {
   actions,
@@ -22,10 +13,10 @@ import {
   type PortalExchange,
   type Scene,
 } from "@/content/lessons/portal-42";
+import { PortalSurfaceMap } from "./PortalSurfaceMap";
 import "./WebSecurityLessons.css";
 import "./Portal42.css";
 
-const layers = ["Ingressi dall’esterno", "Funzioni applicative", "Servizi privati"];
 const sceneIcons = [User, FileText, Users] as const;
 const fields = [
   [User, "Chi agisce"],
@@ -34,49 +25,6 @@ const fields = [
   [ArrowDownToLine, "Cosa cambia"],
 ] as const;
 const first = perform("home", initialPortal, initialInputs);
-
-function SurfaceMap({ trace, inventory }: { trace: PortalExchange; inventory: string[] }) {
-  return (
-    <figure className="portal-map" aria-label="Mappa a cipolla del portale">
-      <figcaption>
-        <Layers size={18} aria-hidden="true" /> Mappa a cipolla
-      </figcaption>
-      <div className="portal-origin">
-        <User size={14} aria-hidden="true" /> {trace.actor}
-      </div>
-      <div className="portal-map-content">
-        <div className="onion" aria-hidden="true">
-          {layers.map((layer, i) => (
-            <div key={layer} className={`ring ring-${i}`} data-active={Boolean(trace.path[i])}>
-              <span>{i + 1}</span>
-            </div>
-          ))}
-          <strong className="portal-core">42.pdf</strong>
-        </div>
-        <ol className="portal-layers">
-          {layers.map((layer, i) => (
-            <li key={layer} data-active={Boolean(trace.path[i])}>
-              <b>{i + 1}</b>
-              <div>
-                <small>{layer}</small>
-                <strong>{trace.path[i] ?? "Fuori dal percorso"}</strong>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
-      <details className="portal-inventory">
-        <summary>Ingressi osservati ({inventory.length})</summary>
-        <p>{inventory.join(" · ")}</p>
-        <p>
-          Il confine di fiducia è il punto in cui cambia chi deve autorizzare la richiesta. Per
-          esempio, per leggere il PDF lo storage riconosce il backend tramite le sue credenziali di
-          servizio.
-        </p>
-      </details>
-    </figure>
-  );
-}
 
 function ExchangeCard({ trace }: { trace: PortalExchange }) {
   const values = [trace.actor, trace.request, trace.responder, trace.effect];
@@ -187,6 +135,7 @@ export function Cybersecurity14Slide() {
   const [portal, setPortal] = useState(first.portal);
   const [inputs, setInputs] = useState(initialInputs);
   const [trace, setTrace] = useState(first.trace);
+  const [run, setRun] = useState(0);
   const [observations, setObservations] = useState<PortalExchange[]>([first.trace]);
   const inventory = [...new Set(observations.map((item) => item.path[0]))];
   const [finalOpen, setFinalOpen] = useState(false);
@@ -195,6 +144,7 @@ export function Cybersecurity14Slide() {
     const next = perform(action, portal, settings);
     setPortal(next.portal);
     setTrace(next.trace);
+    setRun((previous) => previous + 1);
     setObservations((previous) => [
       ...previous.filter(
         (item) =>
@@ -225,7 +175,7 @@ export function Cybersecurity14Slide() {
         subtitle="Chi può interagire con 42.pdf dall’esterno? Ogni ingresso che accetta dati o comandi fa parte della superficie di attacco. Segui la richiesta dal primo anello fino al servizio che la gestisce."
       />
       <div className="portal-workbench">
-        <SurfaceMap trace={trace} inventory={inventory} />
+        <PortalSurfaceMap trace={trace} inventory={inventory} run={run} />
         <div className="portal-scenes">
           <nav aria-label="Scene del portale" className="portal-nav">
             {scenes.map((s, i) => {
@@ -319,6 +269,22 @@ export function Cybersecurity14Slide() {
             </div>
           </section>
           <ExchangeCard trace={trace} />
+          {trace.readCase === "visitor" && (
+            <button
+              className="portal-next"
+              onClick={() => {
+                setScene(1);
+                changePermission(false);
+              }}
+            >
+              Riprova con sessione, senza permesso <ArrowRight size={17} />
+            </button>
+          )}
+          {trace.readCase === "denied" && (
+            <button className="portal-next" onClick={() => changePermission(true)}>
+              Concedi la lettura e riprova <ArrowRight size={17} />
+            </button>
+          )}
           <details className="portal-record">
             <summary>Rivedi gli scambi osservati ({observations.length})</summary>
             <ul>
