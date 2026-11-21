@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
+import { FileSurfaceLab } from "./FileSurfaceLab";
 import { PageHeader } from "@/components/PageHeader";
 import { HudPanel } from "@/design-system/nightrunner";
 import { describeLayer, layers, readCases, readRequest } from "@/content/lessons/cybersecurity-1-4";
@@ -146,63 +147,7 @@ export function Cybersecurity14Slide() {
           dagli operatori autorizzati.
         </p>
       </details>
-      <UploadExperiment />
+      <FileSurfaceLab />
     </article>
-  );
-}
-
-function UploadExperiment() {
-  const [upload, setUpload] = useState(false);
-  const [answer, setAnswer] = useState("");
-  return (
-    <HudPanel heading="Prova finale · Aggiungi il caricamento">
-      <p>
-        Finora la webapp permetteva il login e la lettura di 42.pdf. Abilita una funzione che riceva
-        anche nome e contenuto di un nuovo file.
-      </p>
-      <div className="web-options">
-        <button
-          type="button"
-          aria-pressed={upload}
-          onClick={() => {
-            setUpload(!upload);
-            setAnswer("");
-          }}
-        >
-          {upload ? "Disattiva caricamento" : "Attiva caricamento"}
-        </button>
-      </div>
-      <figure className="web-fan" aria-label="Operazioni sullo stesso ingresso HTTPS">
-        <code>HTTPS · 443</code>
-        <ul>
-          <li>POST /login</li>
-          <li>{readRequest}</li>
-          {upload && <li className="web-reveal">POST /api/documents · caricamento</li>}
-        </ul>
-      </figure>
-      {upload && (
-        <>
-          <p>Dove è cresciuta la superficie di attacco?</p>
-          <div className="web-options">
-            {["Sulla porta di rete", "Nelle funzioni web"].map((choice) => (
-              <button
-                type="button"
-                key={choice}
-                aria-pressed={answer === choice}
-                onClick={() => setAnswer(choice)}
-              >
-                {choice}
-              </button>
-            ))}
-          </div>
-          <p role="status" aria-label="Risposta sul caricamento">
-            {answer &&
-              (answer === "Nelle funzioni web"
-                ? "Esatto. Sulla stessa porta arriva ora una richiesta di scrittura. Il backend deve verificare chi può caricare un file e controllarne nome, dimensione e contenuto prima di salvarlo."
-                : "Guarda la porta prima e dopo: è sempre la 443. Quale nuova operazione può chiedere il browser?")}
-          </p>
-        </>
-      )}
-    </HudPanel>
   );
 }

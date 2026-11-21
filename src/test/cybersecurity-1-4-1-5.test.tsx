@@ -36,19 +36,43 @@ describe("Slide 1.4", () => {
     click("Senza lettura");
     expect(status).toHaveTextContent("403 Forbidden");
   });
-  it("rende osservabile il nuovo ingresso sulla porta esistente", () => {
+  it("aggiunge e rimuove un ramo alla volta e mostra l’effetto della revoca", () => {
     const Lesson = lessonRegistry["cybersecurity-1-4"];
     assert(Lesson);
     render(<Lesson />);
-    fireEvent.click(screen.getByRole("button", { name: "Attiva caricamento" }));
-    expect(screen.getByText("POST /api/documents · caricamento")).toBeVisible();
-    expect(screen.getByText("HTTPS · 443")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "Nelle funzioni web" }));
+    const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+    const map = within(screen.getByRole("figure", { name: "Mappa delle funzioni di 42.pdf" }));
+    const detail = screen.getByRole("region", { name: "Percorso selezionato" });
+    expect(map.getByRole("button", { name: "Anteprima" })).toBeDisabled();
+    click("Attiva caricamento");
+    expect(map.getByText(/Nome e byte del PDF/)).toBeVisible();
+    click("Nelle funzioni web");
     expect(screen.getByRole("status", { name: "Risposta sul caricamento" })).toHaveTextContent(
       "Esatto",
     );
-    fireEvent.click(screen.getByRole("button", { name: "Disattiva caricamento" }));
-    expect(screen.queryByText("POST /api/documents · caricamento")).not.toBeInTheDocument();
+    click("Genera anteprima");
+    expect(detail).toHaveTextContent("interpreta la prima pagina");
+    expect(map.getByText(/Storage → Generatore → Browser/)).toBeVisible();
+    click("Attiva link condiviso");
+    expect(detail).toHaveTextContent("token sia valido");
+    click("Revoca il link");
+    expect(map.getByText("Nessun byte al destinatario")).toBeVisible();
+    click("Attiva ripristino");
+    expect(map.getByText("Backup → Servizio di ripristino → Storage")).toBeVisible();
+    expect(detail).toHaveTextContent("versione corrente");
+    click("Link condiviso");
+    expect(detail).toHaveTextContent("trova la revoca");
+    click("Prova con un nuovo link");
+    expect(map.getByText("Token al gestore · PDF al destinatario")).toBeVisible();
+    for (const undo of [
+      "Disattiva ripristino",
+      "Disattiva condivisione",
+      "Disattiva anteprima",
+      "Disattiva caricamento",
+    ])
+      click(undo);
+    expect(map.getByRole("button", { name: "Caricamento" })).toBeDisabled();
+    expect(detail).toHaveTextContent("sola lettura");
   });
 });
 
