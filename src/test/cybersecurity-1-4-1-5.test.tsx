@@ -113,6 +113,46 @@ describe("Slide 1.4", () => {
     }
   });
 
+  it("segue lo stesso link dal registro al download e localizza il diniego dopo la revoca", () => {
+    const { click, trace, map } = open();
+    function journey() {
+      const caption = () => within(map).getByText(/^[0-9]+\/[0-9]+ ·/).parentElement!.textContent!;
+      const steps = [caption()];
+      const advance = within(map).getByRole("button", { name: "Passaggio successivo" });
+      while (!advance.hasAttribute("disabled") && steps.length < 20) {
+        fireEvent.click(advance);
+        steps.push(caption());
+      }
+      expect(advance).toBeDisabled();
+      return steps.join("\n");
+    }
+    click("2 · Giulia con sessione");
+    click("Crea un link");
+    const created = journey();
+    expect(created).toContain("Registro dei linkRegistra il token di /s/demo-2");
+    expect(created).toContain("201 Created");
+    click("Il collega apre il link");
+    const request = within(trace).getByText(/GET \/s\/demo-2/).textContent;
+    const downloaded = journey();
+    expect(downloaded).toMatch(/Anello 3 · RichiestaRegistro dei link.*stato attivo/);
+    expect(downloaded).toContain("Anello 2 · Lettura consentitaGestore delle condivisioni");
+    expect(downloaded).toContain("Anello 3 · RichiestaStorage privato");
+    expect(downloaded).toContain("200 OK · application/pdf · versione 1");
+    click("Giulia revoca questo link");
+    const revoked = journey();
+    expect(revoked).toContain("Cambia lo stato di /s/demo-2 da attivo a revocato");
+    expect(revoked).toContain("204 No Content");
+    click("Il collega riprova con lo stesso link");
+    expect(within(trace).getByText(/GET \/s\/demo-2/).textContent).toBe(request);
+    const refused = journey();
+    expect(refused).toMatch(/Anello 3 · RichiestaRegistro dei link.*revocato/);
+    expect(refused).toContain("Anello 2 · Download fermatoGestore delle condivisioni");
+    expect(refused).not.toContain("RichiestaStorage privato");
+    expect(refused).toContain("410 Gone");
+    expect(refused).toContain("Fermata all’anello 2 · Gestore delle condivisioni");
+    expect(map.querySelector('.portal-decision-pin[data-phase="stop"]')).toBeVisible();
+  });
+
   it("propaga versione e revoca fra scene senza far ripartire il portale", () => {
     const { click, trace } = open();
     click("2 · Giulia con sessione");

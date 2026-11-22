@@ -1,4 +1,4 @@
-import type { PortalExchange } from "./portal-42";
+import type { PortalExchange, SharedLink } from "./portal-42";
 
 export const stops = {
   client: { ring: 0, x: 1, y: 27 },
@@ -18,7 +18,122 @@ function step(at: Stop, title: string, why: string, phase: Phase = "request"): S
   return { at, title, why, phase };
 }
 
+function sharedLinkJourney(trace: PortalExchange, { event, url }: SharedLink): Step[] {
+  const managing = event === "created" || event === "revoked";
+  const creating = event === "created";
+  const accepted = event === "downloaded";
+  const manager = "Gestore delle condivisioni";
+  const registry = "Registro dei link";
+  const steps = [
+    step("client", trace.actor, trace.request),
+    step(
+      "entry",
+      "Reverse proxy",
+      managing
+        ? "Inoltra al backend la richiesta di Giulia con il cookie di sessione."
+        : "Inoltra al backend la GET del collega. L’indirizzo contiene il token del link.",
+    ),
+  ];
+  if (managing) {
+    steps.push(
+      step(
+        "session",
+        "Gestore di sessione",
+        "Dal cookie il backend identifica Giulia, che chiede di gestire la condivisione del file 42.",
+      ),
+      step(
+        "authorization",
+        manager,
+        creating
+          ? "Verifica che Giulia possa condividere il file 42. Genera un token che permette a chi lo presenta di scaricare questo PDF."
+          : "Verifica che Giulia possa gestire la condivisione di 42.pdf. Chiede al registro di disattivare proprio il token di questo link.",
+      ),
+      step(
+        "database",
+        registry,
+        creating
+          ? `Registra il token di ${url} associandolo al file 42. Memorizza il permesso di sola lettura e lo stato attivo. I byte restano nello storage.`
+          : `Cambia lo stato di ${url} da attivo a revocato. Il file in archivio e le copie già scaricate restano dove sono.`,
+      ),
+      step(
+        "backend",
+        "Server HTTP del backend",
+        creating
+          ? `Ricevuta la conferma del registro, restituisce a Giulia l’indirizzo ${url} con 201 Created.`
+          : "Il registro conferma la revoca. Il gestore risponde con 204 No Content.",
+        "response",
+      ),
+    );
+  } else {
+    steps.push(
+      step(
+        "authorization",
+        manager,
+        `Estrae il token da ${url} e chiede al registro a quale file dà accesso e se è ancora attivo.`,
+      ),
+      step(
+        "database",
+        registry,
+        accepted
+          ? "La registrazione associa il token al file 42, con permesso di lettura e stato attivo. Questi dati tornano al gestore."
+          : "La registrazione associa ancora il token al file 42. Lo stato è diventato revocato. Il registro restituisce questo dato al gestore.",
+      ),
+      accepted
+        ? step(
+            "authorization",
+            manager,
+            "Il token è attivo e consente la lettura del file 42. Il gestore autorizza il download e chiede i byte allo storage con l’identità del servizio.",
+            "allow",
+          )
+        : step(
+            "authorization",
+            manager,
+            "Il token è revocato. Il gestore ferma la richiesta qui e risponde 410 Gone, prima di chiamare lo storage.",
+            "stop",
+          ),
+    );
+    if (accepted)
+      steps.push(
+        step(
+          "storage",
+          "Storage privato",
+          "Riconosce l’identità tecnica del backend e gli restituisce i byte di 42.pdf.",
+        ),
+        step(
+          "backend",
+          "Server HTTP del backend",
+          "Invia al proxy la risposta 200 OK con il PDF nel corpo.",
+          "response",
+        ),
+      );
+  }
+  steps.push(
+    step(
+      "entry",
+      "Reverse proxy",
+      managing
+        ? "Inoltra la risposta del backend al browser di Giulia."
+        : "Inoltra la risposta del backend al browser del collega.",
+      "response",
+    ),
+    step(
+      "client",
+      managing ? "Browser di Giulia" : "Browser del collega",
+      creating
+        ? `Giulia riceve ${url} e lo passa al collega.`
+        : event === "revoked"
+          ? `Giulia riceve conferma della revoca. Il collega ha ancora lo stesso indirizzo ${url}.`
+          : accepted
+            ? `${trace.response}. Il collega riceve una copia di 42.pdf. L’originale resta in archivio.`
+            : "410 Gone. Il collega ha riprovato lo stesso indirizzo. La copia già scaricata resta sul suo dispositivo, ma questa richiesta non gli consegna altri byte.",
+      "response",
+    ),
+  );
+  return steps;
+}
+
 export function portalJourney(trace: PortalExchange): Step[] {
+  if (trace.sharedLink) return sharedLinkJourney(trace, trace.sharedLink);
   const steps = [step("client", trace.actor, trace.request.split("\n")[0] ?? trace.request)];
   if (trace.readCase) {
     const guest = trace.readCase === "visitor";

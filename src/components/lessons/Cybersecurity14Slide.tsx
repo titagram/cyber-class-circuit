@@ -26,6 +26,12 @@ const fields = [
 ] as const;
 const first = perform("home", initialPortal, initialInputs);
 
+const linkContinuation = {
+  created: { label: "Il collega apre il link", scene: 2, action: "colleague" },
+  downloaded: { label: "Giulia revoca questo link", scene: 1, action: "revoke" },
+  revoked: { label: "Il collega riprova con lo stesso link", scene: 2, action: "colleague" },
+} as const;
+
 function ExchangeCard({ trace }: { trace: PortalExchange }) {
   const values = [trace.actor, trace.request, trace.responder, trace.effect];
   return (
@@ -136,6 +142,10 @@ export function Cybersecurity14Slide() {
   const [inputs, setInputs] = useState(initialInputs);
   const [trace, setTrace] = useState(first.trace);
   const [run, setRun] = useState(0);
+  const continuation =
+    trace.sharedLink && trace.sharedLink.event !== "refused"
+      ? linkContinuation[trace.sharedLink.event]
+      : undefined;
   const [observations, setObservations] = useState<PortalExchange[]>([first.trace]);
   const inventory = [...new Set(observations.map((item) => item.path[0]))];
   const [finalOpen, setFinalOpen] = useState(false);
@@ -269,6 +279,17 @@ export function Cybersecurity14Slide() {
             </div>
           </section>
           <ExchangeCard trace={trace} />
+          {continuation && (
+            <button
+              className="portal-next"
+              onClick={() => {
+                setScene(continuation.scene);
+                observe(continuation.action);
+              }}
+            >
+              {continuation.label} <ArrowRight size={17} />
+            </button>
+          )}
           {trace.readCase === "visitor" && (
             <button
               className="portal-next"

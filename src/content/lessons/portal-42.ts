@@ -45,7 +45,9 @@ export const sceneActions = [
 
 // Each path names the public entry, then (if reached) the application and its private services.
 type Path = readonly [string, string?, string?];
+export type SharedLink = { event: "created" | "downloaded" | "revoked" | "refused"; url: string };
 type Exchange = {
+  sharedLink?: SharedLink;
   action: Action;
   actor: string;
   request: string;
@@ -83,10 +85,20 @@ export function perform(action: Action, portal: Portal, inputs: Inputs) {
     path: Path,
     changes: Partial<Portal> = {},
   ): { trace: Exchange; portal: Portal } {
-    return {
-      trace: { action, actor, request, responder, response, effect, path },
-      portal: { ...portal, ...changes },
-    };
+    const next = { ...portal, ...changes };
+    const trace: Exchange = { action, actor, request, responder, response, effect, path };
+    if (action === "share" || action === "revoke" || action === "colleague") {
+      const event =
+        action === "colleague"
+          ? next.revoked
+            ? "refused"
+            : "downloaded"
+          : action === "share"
+            ? "created"
+            : "revoked";
+      trace.sharedLink = { event, url: `/s/demo-${next.link}` };
+    }
+    return { trace, portal: next };
   }
   switch (action) {
     case "home":

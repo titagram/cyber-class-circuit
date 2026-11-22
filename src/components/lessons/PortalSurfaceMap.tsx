@@ -103,7 +103,11 @@ function Journey({ trace, started }: { trace: PortalExchange; started: boolean }
               <b>{i + 1}</b>
               <div>
                 <small>{layer}</small>
-                <strong>{trace.path[i] ?? "Fuori dal percorso"}</strong>
+                <strong>
+                  {trace.sharedLink && position.ring === i + 1
+                    ? current.title
+                    : (trace.path[i] ?? "Fuori dal percorso")}
+                </strong>
               </div>
             </li>
           ))}
