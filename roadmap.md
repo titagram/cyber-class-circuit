@@ -27,3 +27,10 @@
 - [x] Definire la palette chiara sui token Nightrunner condivisi.
 - [x] Salvare e ripristinare la preferenza tra i ricaricamenti.
 - [x] Verificare desktop, telefono, barra ridotta e slide interattiva.
+
+# Navigazione tra capitoli
+
+- [x] Caricare i capitoli dello stesso corso con i permessi del ruolo corrente.
+- [x] Mostrare Precedente e Successivo seguendo l’ordine dell’indice, inclusa la lezione compagna.
+- [x] Gestire il primo e l’ultimo capitolo senza collegamenti fuori sequenza.
+- [x] Verificare la sequenza come amministratore e studente, su desktop e telefono.

@@ -72,3 +72,15 @@ export function getRequestParentId(id: string) {
   const suffix = "~" + requestLesson.key;
   return id.endsWith(suffix) ? id.slice(0, -suffix.length) : null;
 }
+
+export function getAdjacentChapters<T extends CourseChapter>(
+  chapters: readonly T[],
+  chapterId: string,
+): { previous: T | undefined; next: T | undefined } {
+  const index = chapters.findIndex((chapter) => chapter.id === chapterId);
+  if (index < 0) return { previous: undefined, next: undefined };
+  return {
+    previous: index > 0 ? chapters[index - 1] : undefined,
+    next: index < chapters.length - 1 ? chapters[index + 1] : undefined,
+  };
+}
