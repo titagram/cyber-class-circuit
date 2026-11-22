@@ -109,7 +109,6 @@ describe("Request e response", () => {
       fireEvent.click(screen.getByLabelText("Indirizzo DNS già in cache"));
       fireEvent.click(screen.getByRole("button", { name: "Avanti" }));
       expect(screen.getByText("L’indirizzo è già disponibile", { selector: "h3" })).toBeVisible();
-      fireEvent.click(screen.getByRole("button", { name: "Autorizzazione" }));
       fireEvent.click(screen.getByRole("button", { name: "Segui il caso negato" }));
       expect(screen.getByText("Decisione: lettura negata", { selector: "pre" })).toBeVisible();
       fireEvent.click(screen.getByRole("button", { name: "Avanti" }));

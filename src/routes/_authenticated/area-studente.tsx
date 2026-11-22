@@ -1,3 +1,4 @@
+import { webTitles } from "@/content/lessons/web-module";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
@@ -62,7 +63,7 @@ function StudentAreaPage() {
                             params={{ chapterId: chapter.id }}
                             className="inline-flex items-center gap-1.5 text-accent underline-offset-4 hover:underline"
                           >
-                            {chapter.title}
+                            {webTitles[lessonKey ?? ""] ?? chapter.title}
                             <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
                           </Link>
                         ) : (

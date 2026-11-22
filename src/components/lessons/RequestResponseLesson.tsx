@@ -12,7 +12,6 @@ export function RequestResponseLesson() {
   const [allowed, setAllowed] = useState(true);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [prediction, setPrediction] = useState("");
   const trace = buildRequestTrace(cached, allowed);
   const step = trace[index] ?? trace[0];
   const last = trace.length - 1;
@@ -55,7 +54,6 @@ export function RequestResponseLesson() {
               onChange={(e) => {
                 setAllowed(e.target.checked);
                 go(0);
-                setPrediction("");
               }}
             />{" "}
             Giulia può leggere il file 42
@@ -148,53 +146,32 @@ export function RequestResponseLesson() {
       </HudPanel>
       <HudPanel heading="Stesso clic, cambia un permesso">
         <p>
-          La stessa sessione valida, lo stesso file, la stessa porta. Se togli a Giulia il permesso
-          di lettura, dove si separano le due esecuzioni?
+          Il backend risolve la sessione e legge i metadati del file. Il modulo di autorizzazione
+          confronta il soggetto, il tenant e il permesso richiesto prima di accedere ai byte.
+          Confronta le due esecuzioni da quel punto.
         </p>
-        <div className="web-options">
-          {["Reverse proxy", "Autorizzazione", "Storage"].map((v) => (
-            <button key={v} aria-pressed={prediction === v} onClick={() => setPrediction(v)}>
-              {v}
-            </button>
+        <div className="web-branches">
+          {[true, false].map((a) => (
+            <div key={String(a)}>
+              <h3>{a ? "Permesso concesso" : "Permesso negato"}</h3>
+              <p>
+                {a
+                  ? "Il servizio apre l’oggetto e trasmette il PDF. Il proxy riceve una risposta 200."
+                  : "Il servizio interrompe la lettura. Il proxy riceve un 403 e lo storage non viene chiamato."}
+              </p>
+              <button
+                className="web-link"
+                onClick={() => {
+                  setAllowed(a);
+                  go(common);
+                  scene.current?.focus();
+                }}
+              >
+                {a ? "Segui il caso consentito" : "Segui il caso negato"}
+              </button>
+            </div>
           ))}
         </div>
-        {prediction && (
-          <div aria-live="polite">
-            {prediction === "Autorizzazione" ? (
-              <>
-                <p>Esatto. Fino alla lettura della scheda del file i due percorsi coincidono.</p>
-                <div className="web-branches">
-                  {[true, false].map((a) => (
-                    <div key={String(a)}>
-                      <h3>{a ? "Permesso concesso" : "Permesso negato"}</h3>
-                      <p>
-                        {a
-                          ? "Autorizzazione → storage → 200 → PDF"
-                          : "Autorizzazione → controller → 403 → messaggio"}
-                      </p>
-                      <button
-                        className="web-link"
-                        onClick={() => {
-                          setAllowed(a);
-                          go(common);
-                          scene.current?.focus();
-                        }}
-                      >
-                        {a ? "Segui il caso consentito" : "Segui il caso negato"}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p>
-                {prediction === "Reverse proxy"
-                  ? "Il proxy inoltra entrambe le richieste allo stesso backend. Quale modulo conosce Giulia e i permessi del file?"
-                  : "Nel caso negato lo storage resta inattivo. Quale decisione impedisce al servizio di chiamarlo?"}
-              </p>
-            )}
-          </div>
-        )}
       </HudPanel>
     </article>
   );

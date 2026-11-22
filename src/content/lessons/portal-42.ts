@@ -60,6 +60,7 @@ type Exchange = {
 const guest = "Giulia dal browser, senza sessione";
 const signed = "Giulia dal browser, con sessione";
 const cookie = "\nCookie: session=giulia-demo";
+const sessionWriteHeaders = cookie + "\nX-CSRF-Token: demo-csrf";
 const pdf = (version: number) => `200 OK · application/pdf · versione ${version}`;
 
 export const initialPortal = {
@@ -202,7 +203,9 @@ export function perform(action: Action, portal: Portal, inputs: Inputs) {
       const version = portal.lastVersion + 1;
       return result(
         signed,
-        "POST /api/documents" + cookie + "\nmultipart/form-data · ID 42, nome e byte del PDF",
+        "POST /api/documents" +
+          sessionWriteHeaders +
+          "\nmultipart/form-data · ID 42, nome e byte del PDF",
         "Il servizio di upload verifica il permesso di scrittura, il formato e la dimensione, poi archivia i byte.",
         "200 OK · versione " + version,
         `La versione corrente passa da v${portal.version} a v${version}. Il prossimo download autorizzato restituirà i nuovi byte.`,
@@ -232,7 +235,7 @@ export function perform(action: Action, portal: Portal, inputs: Inputs) {
       const link = portal.link + 1;
       return result(
         signed,
-        "POST /api/documents/42/links" + cookie,
+        "POST /api/documents/42/links" + sessionWriteHeaders,
         "Il gestore delle condivisioni verifica il permesso e registra un token di lettura.",
         `201 Created · /s/demo-${link}`,
         "Giulia riceve un link da inviare al collega. Nel portale demo è valido un solo link per file e quello nuovo sostituisce il precedente.",
@@ -243,7 +246,7 @@ export function perform(action: Action, portal: Portal, inputs: Inputs) {
     case "revoke":
       return result(
         signed,
-        `DELETE /api/documents/42/links/demo-${portal.link}` + cookie,
+        `DELETE /api/documents/42/links/demo-${portal.link}` + sessionWriteHeaders,
         "Il gestore delle condivisioni verifica il permesso e disattiva il token.",
         "204 No Content",
         "Il collega che riapre questo link non riceve altri byte. Le copie già scaricate restano sul suo dispositivo.",
@@ -290,3 +293,28 @@ export function perform(action: Action, portal: Portal, inputs: Inputs) {
 }
 
 export type PortalExchange = ReturnType<typeof perform>["trace"];
+
+export const actionControls: Record<Action, string> = {
+  home: "Pubblicare al proxy solo gli host e i percorsi previsti. Verificare la configurazione separatamente dall’HTML ricevuto.",
+  catalog:
+    "Limitare la proiezione pubblica a nome e ID. Mantenere una policy distinta sulla rotta che restituisce il contenuto.",
+  language: "Associare i codici lingua ammessi a dizionari pubblici predefiniti.",
+  search:
+    "Vincolare la ricerca ai record pubblici, parametrizzare i valori e rendere il termine come testo.",
+  visitor:
+    "Richiedere una sessione prima di consultare dati riservati. Nel diniego verificare che lo storage resti inattivo.",
+  login: "Verificare limiti ai tentativi, errori coerenti e rotazione della sessione al login.",
+  read: "Applicare la policy di lettura su soggetto, tenant e file prima di aprire l’oggetto nello storage.",
+  upload:
+    "Autorizzare la scrittura sul file, verificare formato e dimensione e assegnare il riferimento di archivio sul server.",
+  preview:
+    "Riutilizzare la policy di lettura del file. Eseguire il generatore con privilegi limitati e limiti di risorse.",
+  share: "Autorizzare chi emette la concessione e vincolarla al file 42 e alla sola lettura.",
+  revoke:
+    "Autorizzare la gestione della concessione e rendere la revoca effettiva sulla richiesta successiva.",
+  colleague:
+    "Controllare token, stato e operazione nel gestore delle condivisioni prima di chiamare lo storage.",
+  api: "Risolvere l’identità del programma e applicare la stessa policy sul file usata per il browser.",
+  restore:
+    "Verificare un privilegio distinto per il ripristino. Limitare il servizio al tenant richiesto e registrare versione e operatore.",
+};

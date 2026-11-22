@@ -177,74 +177,39 @@ describe("Slide 1.4", () => {
     expect(trace).toHaveTextContent("410 Gone");
   });
 
-  it("presenta una sola verifica finale sul link valido e consente la correzione", () => {
+  it("collega gli ingressi osservati alle verifiche nel codice", () => {
     const { click, map } = open();
     click("3 · Altri attori esterni");
     click("Vai alla verifica finale");
+    const review = within(screen.getByRole("region", { name: "Verifica finale" }));
+    expect(review.getByText(/Controllare token, stato e operazione/)).toBeVisible();
+    expect(review.getByText(/GET \/s\/demo-1/)).toBeVisible();
     expect(map).toBeVisible();
-    const check = within(screen.getByRole("region", { name: "Verifica finale" }));
-    const submit = check.getByRole("button", { name: "Verifica lo scambio" });
-    expect(submit).toBeDisabled();
-    const fields = check.getAllByRole("combobox");
-    const actor = check.getByLabelText("Chi agisce");
-    [
-      "Giulia",
-      "Il token nel link",
-      "Il gestore delle condivisioni",
-      "Il collega riceve una copia",
-    ].forEach((value, i) => {
-      const field = fields[i];
-      assert(field);
-      fireEvent.change(field, { target: { value } });
-    });
-    fireEvent.click(submit);
-    expect(check.getByRole("status")).toHaveTextContent("3/4");
-    fireEvent.change(actor, { target: { value: "Il collega" } });
-    fireEvent.click(submit);
-    expect(check.getByRole("status")).toHaveTextContent("4/4");
   });
 });
 
 describe("Slide 1.5", () => {
-  it("rende il contenuto leggibile solo sul tratto HTTP o all’endpoint TLS", () => {
+  it("distingue richiesta revocata, copia già salvata e visibilità degli altri soggetti", () => {
     const Lesson = lessonRegistry["cybersecurity-1-5"];
-    assert(Lesson, "La lezione deve essere registrata");
+    assert(Lesson);
     render(<Lesson />);
-
-    const observation = screen.getByRole("region", { name: "Osservazione del traffico" });
-    const diagram = within(
-      screen.getByRole("figure", { name: "Percorso della richiesta del file 42.pdf" }),
-    );
-    const externalLink = diagram.getByTestId("data-flow-connection-browser-proxy");
-    const internalLink = diagram.getByTestId("data-flow-connection-proxy-backend");
-
-    expect(externalLink).toHaveAttribute("data-protocol", "HTTPS");
-    expect(within(externalLink).getByTestId("traffic-observer")).toBeVisible();
-    expect(internalLink).toHaveAttribute("data-protocol", "HTTP");
-    expect(within(observation).queryByText(/GET \/api\/documents\/42/)).not.toBeInTheDocument();
-    expect(within(observation).getByText(/indirizzi IP/)).toBeVisible();
-
-    fireEvent.click(screen.getByRole("tab", { name: "Proxy → Backend" }));
-    expect(internalLink).toHaveAttribute("data-highlighted", "true");
-    expect(within(internalLink).getByTestId("traffic-observer")).toBeVisible();
-    expect(within(observation).getByText(/GET \/api\/documents\/42/)).toBeVisible();
-
-    fireEvent.click(screen.getByRole("button", { name: "HTTPS" }));
-    expect(internalLink).toHaveAttribute("data-protocol", "HTTPS");
-    expect(internalLink).toHaveTextContent("Cifrato TLS");
-    expect(externalLink).toHaveAttribute("data-protocol", "HTTPS");
-    expect(within(observation).queryByText(/GET \/api\/documents\/42/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "All’endpoint TLS" }));
-    expect(within(internalLink).queryByTestId("traffic-observer")).not.toBeInTheDocument();
-    const backend = diagram.getByTestId("data-flow-node-backend");
-    expect(within(backend).getByTestId("traffic-observer")).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "HTTPS" }));
-    expect(within(backend).getByTestId("traffic-observer")).toBeVisible();
-    expect(within(observation).getByText(/GET \/api\/documents\/42/)).toBeVisible();
-
-    fireEvent.click(screen.getByRole("tab", { name: "Browser → Reverse proxy" }));
-    expect(within(observation).queryByText(/GET \/api\/documents\/42/)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: "Proxy → Backend" }));
-    expect(screen.getByRole("button", { name: "HTTPS" })).toHaveAttribute("aria-pressed", "true");
+    const click = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+    const card = within(screen.getByRole("region", { name: "Evidenza sul file" }));
+    expect(card.getByText(/200 OK/, { selector: "code" })).toBeVisible();
+    click("Dopo la revoca");
+    expect(card.getByText(/410 Gone/, { selector: "code" })).toBeVisible();
+    expect(card.getByRole("list")).toHaveTextContent("Gestore link · diniego");
+    for (const [name, artifact] of [
+      ["Download sul dispositivo", "Richieste al portale: 0"],
+      ["Proxy e servizio file", "Byte PDF inoltrati: 0"],
+      ["Storage e backup", "copia della versione 1"],
+      ["Anteprima", "image/png"],
+      ["Database, cache e log", "status=410"],
+    ] as const) {
+      click(name);
+      expect(card.getByText(artifact, { exact: false, selector: "code" })).toBeVisible();
+    }
+    click("Prima della revoca");
+    expect(card.getByText(/status=200/, { selector: "code" })).toBeVisible();
   });
 });

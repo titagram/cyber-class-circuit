@@ -18,7 +18,7 @@ const explanations: Record<string, { action: string; result: string }> = {
     action:
       "Il reverse proxy apre o riutilizza una connessione al server HTTP del backend e gli inoltra la richiesta del file 42.",
     result:
-      "Il backend restituisce al proxy la risposta con il PDF. Su questo tratto i byte sono cifrati in transito se anche la connessione interna usa TLS.",
+      "Il backend restituisce al proxy la risposta con il PDF. La decisione di lettura precede la risposta. Il proxy inoltra i byte ricevuti dal servizio file.",
   },
   "backend-database": {
     action: "Il backend cerca nel database la scheda del file con ID 42.",

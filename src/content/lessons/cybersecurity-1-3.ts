@@ -8,7 +8,8 @@ import type {
 export const lesson = {
   id: "cybersecurity-1-3",
   title: "1.3 — Il viaggio di un'informazione",
-  subtitle: "Dove si trovano, come vengono elaborati e quali percorsi attraversano i dati.",
+  subtitle:
+    "Segui i byte e i metadati di 42.pdf. A ogni passaggio individua il chiamante, il servizio raggiunto e i privilegi necessari.",
 } as const;
 
 export const moments = [
@@ -92,7 +93,7 @@ export const architecture: DataFlowConfig = {
       description: "Il reverse proxy, o web server, è il punto di ingresso delle richieste verso i servizi applicativi.",
       responsibilities: [
         "Riceve le richieste dal browser",
-        "Termina TLS quando il collegamento dal browser usa HTTPS",
+        "Applica le regole di pubblicazione e inoltra ai backend previsti",
         "Inoltra il traffico al backend",
       ],
       dataRole: "transmit",
@@ -184,12 +185,55 @@ export const architecture: DataFlowConfig = {
     },
   ],
   connections: [
-    { id: "browser-backend", from: "browser", to: "backend", label: "HTTPS", level: 1, maxLevel: 1, protection: "TLS sul collegamento mostrato" },
-    { id: "browser-proxy", from: "browser", to: "proxy", label: "HTTPS · TLS", level: 2, protection: "TLS attivo; termina sul reverse proxy" },
-    { id: "proxy-backend", from: "proxy", to: "backend", label: "HTTP / HTTPS", level: 2, protection: "Da valutare: dipende dalla configurazione interna" },
-    { id: "backend-database", from: "backend", to: "database", label: "Query e metadati", level: 1, protection: "Protezione da verificare sul collegamento specifico" },
-    { id: "backend-cache", from: "backend", to: "cache", label: "Letture e scritture", level: 2, protection: "Protezione da verificare sul collegamento specifico" },
-    { id: "backend-storage", from: "backend", to: "storage", label: "File 42.pdf", level: 2, protection: "Protezione da verificare sul collegamento specifico" },
+    {
+      id: "browser-backend",
+      from: "browser",
+      to: "backend",
+      label: "Richiesta del browser",
+      level: 1,
+      maxLevel: 1,
+      protection: "Accesso alla rotta pubblicata",
+    },
+    {
+      id: "browser-proxy",
+      from: "browser",
+      to: "proxy",
+      label: "Ingresso pubblico",
+      level: 2,
+      protection: "Host e rotte pubblicati al proxy",
+    },
+    {
+      id: "proxy-backend",
+      from: "proxy",
+      to: "backend",
+      label: "Inoltro al backend",
+      level: 2,
+      protection: "Ingresso interno riservato al proxy",
+    },
+    {
+      id: "backend-database",
+      from: "backend",
+      to: "database",
+      label: "Query e metadati",
+      level: 1,
+      protection: "Query e privilegi del ruolo applicativo",
+    },
+    {
+      id: "backend-cache",
+      from: "backend",
+      to: "cache",
+      label: "Letture e scritture",
+      level: 2,
+      protection: "Scope delle chiavi per tenant",
+    },
+    {
+      id: "backend-storage",
+      from: "backend",
+      to: "storage",
+      label: "File 42.pdf",
+      level: 2,
+      protection: "Lettura limitata agli oggetti autorizzati",
+    },
     { id: "database-backup", from: "database", to: "backup", label: "Copia metadati", level: 3 },
     { id: "storage-backup", from: "storage", to: "backup", label: "Copia file", level: 3 },
     { id: "backend-temp", from: "backend", to: "temp", label: "Elaborazioni temporanee", level: 3 },
@@ -206,7 +250,8 @@ export const architecture: DataFlowConfig = {
     {
       id: "gateway-application",
       label: "Ingresso ↔ applicazione",
-      description: "Separa il punto di ingresso dal backend. La terminazione TLS sul proxy non copre automaticamente il tratto successivo.",
+      description:
+        "Separa il punto di ingresso dal backend. La rete limita chi può raggiungere il backend. L’applicazione verifica il diritto dell’utente sulla risorsa.",
       level: 2,
       x: 380,
     },
@@ -231,7 +276,8 @@ export const architecture: DataFlowConfig = {
     {
       id: "proxy-forward",
       title: "Reverse proxy · riceve e inoltra",
-      description: "Il reverse proxy riceve la richiesta HTTPS, termina TLS nello scenario e la inoltra al backend.",
+      description:
+        "Il reverse proxy riceve metodo, host e percorso e inoltra la richiesta al server HTTP del portale.",
       nodes: ["proxy"],
       transfers: [
         { connection: "browser-proxy", direction: "forward" },
@@ -379,25 +425,25 @@ export const trustBoundaryDefinition =
   "Un trust boundary, o confine di fiducia, separa componenti o ambienti con differenti livelli di fiducia, privilegi o responsabilità. Attraversarlo richiede una valutazione esplicita di identità, autorizzazioni e protezione dei dati.";
 
 export const trustQuestion =
-  "Se proteggo la comunicazione tra browser e reverse proxy, ho protetto automaticamente tutte le comunicazioni della mia applicazione?";
+  "Chi può chiamare ciascun componente e con quale identità?";
 
 export const trustAnswer =
-  "No. Nello scenario HTTPS termina sul reverse proxy: TLS protegge il tratto browser → proxy, ma non implica TLS tra proxy e backend. Ogni collegamento verso backend, database, cache o servizi esterni richiede una verifica specifica. I collegamenti interni non sono necessariamente insicuri: dipendono da configurazione e architettura.";
+  "Il browser raggiunge le rotte pubblicate al proxy. Il backend risolve la sessione di Giulia e usa le proprie credenziali per interrogare i servizi privati. Ogni confine richiede una verifica della raggiungibilità e dei privilegi.";
 
 export const trustLegs = [
   {
     id: "browser-proxy",
     boundary: "client-service",
-    question: "Fino a dove arriva la protezione HTTPS del browser?",
+    question: "Quali richieste può inviare un client esterno?",
     answer:
-      "Il browser verifica il certificato del servizio. TLS protegge richiesta e risposta su questo collegamento e termina al reverse proxy, che può leggere la richiesta per inoltrarla.",
+      "Il client sceglie il percorso, il metodo, le intestazioni e il corpo. Il proxy accetta i siti e le rotte pubblicati. Il permesso di leggere il file viene valutato dal backend.",
   },
   {
     id: "proxy-backend",
     boundary: "gateway-application",
-    question: "Chi protegge la richiesta dopo il proxy?",
+    question: "Quali chiamanti può accettare il backend?",
     answer:
-      "Il proxy apre o riusa un collegamento verso il backend. Verifica come il backend riconosce il proxy e se anche questo tratto usa TLS. Il lucchetto del browser riguarda la connessione esterna.",
+      "Nel modello soltanto il proxy raggiunge il server applicativo. Verifica le regole di rete e la configurazione degli intermediari fidati prima di usare le intestazioni di inoltro.",
   },
   {
     id: "backend-database",
@@ -418,7 +464,7 @@ export const trustLegs = [
     boundary: "application-data",
     question: "Chi può recuperare il PDF dallo storage?",
     answer:
-      "Dopo aver autorizzato l’utente, il backend chiede allo storage i byte del file. Verifica la protezione del canale e quali oggetti può leggere l’identità tecnica del backend.",
+      "Dopo aver autorizzato l’utente, il backend chiede allo storage i byte del file. Verifica i permessi del servizio e quali oggetti può leggere l’identità tecnica del backend.",
   },
   {
     id: "database-backup",

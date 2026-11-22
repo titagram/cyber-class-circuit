@@ -219,7 +219,7 @@ describe("Slide 1.3", () => {
       "aria-pressed",
       "false",
     );
-    expect(card.getByText(/Se proteggo la comunicazione/)).toBeVisible();
+    expect(card.getByText(/Chi può chiamare ciascun componente/)).toBeVisible();
   });
 
   it("mostra che cosa rimane in ciascun componente dopo il download", () => {
@@ -255,11 +255,11 @@ describe("Slide 1.3", () => {
     expect(panel.getByTestId("data-flow-node-database")).toHaveAttribute("data-highlighted", "false");
   });
 
-  it("mostra la protezione TLS distinta per ciascun tratto", () => {
+  it("mostra ingresso pubblico, backend interno e identità del servizio", () => {
     openMoment("7 · I confini di fiducia");
     const trust = screen.getByRole("tabpanel", { name: "7 · I confini di fiducia" });
-    expect(within(trust).getByText("TLS attivo; termina sul reverse proxy")).toBeVisible();
-    expect(within(trust).getAllByText("Da valutare: dipende dalla configurazione interna")).toHaveLength(1);
-    expect(within(trust).getByText(/I collegamenti interni non sono necessariamente insicuri/)).toBeVisible();
+    expect(within(trust).getByText("Host e rotte pubblicati al proxy")).toBeVisible();
+    expect(within(trust).getAllByText("Ingresso interno riservato al proxy")).toHaveLength(1);
+    expect(within(trust).getByText(/Il backend risolve la sessione di Giulia/)).toBeVisible();
   });
 });

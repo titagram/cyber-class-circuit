@@ -3,6 +3,7 @@ import { ArrowDownToLine, ArrowRight, FileText, Network, Send, User, Users } fro
 import { PageHeader } from "@/components/PageHeader";
 import {
   actions,
+  actionControls,
   initialInputs,
   initialPortal,
   perform,
@@ -58,80 +59,10 @@ function ExchangeCard({ trace }: { trace: PortalExchange }) {
           );
         })}
       </dl>
-    </section>
-  );
-}
-
-const quiz = [
-  { label: "Chi agisce", options: ["Giulia", "Il collega", "L’operatore"], correct: "Il collega" },
-  {
-    label: "Cosa invia",
-    options: ["Il token nel link", "La password di Giulia", "I byte del PDF"],
-    correct: "Il token nel link",
-  },
-  {
-    label: "Chi decide se rispondere con il file",
-    options: ["Lo schermo", "Il browser", "Il gestore delle condivisioni"],
-    correct: "Il gestore delle condivisioni",
-  },
-  {
-    label: "Cosa cambia",
-    options: [
-      "Si crea una nuova versione in archivio",
-      "Il collega riceve una copia",
-      "Il backup viene ripristinato",
-    ],
-    correct: "Il collega riceve una copia",
-  },
-];
-
-function FinalCheck() {
-  const [answers, setAnswers] = useState(quiz.map(() => ""));
-  const [checked, setChecked] = useState(false);
-  const correct = quiz.filter((q, i) => q.correct === answers[i]).length;
-  return (
-    <section className="portal-card" aria-label="Verifica finale">
-      <h3>Verifica finale</h3>
-      <p>
-        Un collega apre un link ancora valido a 42.pdf dal suo browser. Ricostruisci questo scambio.
-      </p>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          setChecked(true);
-        }}
-      >
-        <div className="portal-quiz">
-          {quiz.map((q, i) => (
-            <label key={q.label}>
-              {q.label}
-              <select
-                value={answers[i]}
-                onChange={(event) => {
-                  setAnswers(answers.map((a, j) => (i === j ? event.target.value : a)));
-                  setChecked(false);
-                }}
-              >
-                <option value="">Scegli…</option>
-                {q.options.map((o) => (
-                  <option key={o}>{o}</option>
-                ))}
-              </select>
-              {checked && q.correct !== answers[i] && <small>Da rivedere</small>}
-            </label>
-          ))}
-        </div>
-        <button type="submit" disabled={answers.some((a) => !a)}>
-          Verifica lo scambio
-        </button>
-      </form>
-      {checked && (
-        <p className="portal-feedback" role="status">
-          <strong>{correct}/4.</strong> Il browser del collega invia il token nel link. Il gestore
-          trova la concessione attiva per il file 42, legge i byte e ne restituisce una copia.
-          L’originale resta in archivio.
-        </p>
-      )}
+      <details>
+        <summary>Controllo nel codice o nel deployment</summary>
+        <p>{actionControls[trace.action]}</p>
+      </details>
     </section>
   );
 }
@@ -337,7 +268,24 @@ export function Cybersecurity14Slide() {
                 <ArrowRight size={17} />
               </button>
               <div hidden={!finalOpen}>
-                <FinalCheck />
+                <section className="portal-card" aria-label="Verifica finale">
+                  <h3>Controlli sugli ingressi osservati</h3>
+                  <p>
+                    Per ogni azione ripercorri la richiesta simulata e individua il controllo
+                    corrispondente nel progetto.
+                  </p>
+                  <ul className="portal-record">
+                    {observations.map((item) => (
+                      <li key={item.action + item.response.split(" ")[0]}>
+                        <strong>{actions[item.action]}</strong>
+                        <code>
+                          {item.request.split("\n")[0]} → {item.response}
+                        </code>
+                        <p>{actionControls[item.action]}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               </div>
             </>
           )}

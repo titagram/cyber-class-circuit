@@ -55,8 +55,8 @@ const examples: Record<State, Record<ArchitectureNodeKind, Example>> = {
       why: "Usa ciascun blocco per costruire la copia locale. A download concluso, i byte salvati sul disco sono a riposo.",
     },
     gateway: {
-      data: "Il reverse proxy legge in memoria le intestazioni HTTP dopo la terminazione TLS e gestisce i blocchi della risposta.",
-      why: "Le intestazioni gli indicano dove inoltrare la richiesta. Al ritorno prepara i blocchi per la connessione HTTPS verso il browser.",
+      data: "Il reverse proxy legge in memoria le intestazioni HTTP e gestisce i blocchi della risposta.",
+      why: "Le intestazioni gli indicano dove inoltrare la richiesta. Al ritorno prepara i blocchi per la risposta al browser.",
     },
     compute: {
       data: "Il backend usa la sessione di Giulia, l’ID 42 e i permessi della scheda. Dopo il controllo gestisce in memoria i blocchi del PDF.",

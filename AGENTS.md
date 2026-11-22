@@ -33,3 +33,7 @@ use the editor.
 - Admin access = row in public.user_roles with role 'admin'; the first account created gets it via trigger, and every data table is admin-only via has_role RLS.
 - Course/chapter structure is intentionally loose (jsonb metadata/content); courses are authored outside the UI, the panel only lists and links them to classes.
 - Student auth accounts link to `public.students.user_id` (plain UUID); student RLS exposes only courses/chapters assigned through their classes, so management data stays admin-only.
+
+## Lezioni di web penetration testing
+
+Per le prossime lezioni web, partire dall’architettura e dagli ingressi raggiungibili nel modello. Collegare ogni caso a chiamante, input, controllo lato server, conseguenza e verifica osservabile. Distinguere cosa prova una risposta del client da ciò che richiede evidenza lato servizio o deployment. Usare simulazioni locali e deterministiche per sviluppatori senior. La crittografia appartiene al corso dedicato.
